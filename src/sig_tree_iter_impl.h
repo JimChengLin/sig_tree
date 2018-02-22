@@ -160,13 +160,16 @@ namespace sgt {
             } else {
                 const Node * cursor = tree_->OffsetToMemNode(que_.back().first);
                 trans_.emplace(tree_->helper_->Trans(cursor->reps_[que_.back().second]));
-                trans_.value().Get(trans_.value().Key(), &out_);
+                out_.clear();
                 return Key();
             }
         }
 
         Slice Value() const override {
             if (trans_.has_value()) {
+                if (out_.empty()) {
+                    trans_.value().Get(trans_.value().Key(), &out_);
+                }
                 return out_;
             } else {
                 Key();

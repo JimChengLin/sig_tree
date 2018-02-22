@@ -1,3 +1,4 @@
+#include <iostream>
 #include <random>
 #include <set>
 #include <unordered_set>
@@ -133,6 +134,8 @@ namespace sgt {
             std::set<uint32_t, cmp> set;
 
             auto seed = std::random_device()();
+            std::cout << "sig_tree_test_seed: " << seed << std::endl;
+
             std::default_random_engine engine(seed);
             for (size_t i = 0; i < kTestTimes; ++i) {
                 auto v = std::uniform_int_distribution<uint32_t>(0, UINT32_MAX >> 1)(engine);

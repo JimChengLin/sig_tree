@@ -178,7 +178,7 @@ namespace sgt {
         std::tuple<size_t /* idx */, bool /* direct */, size_t /* size */>
         FindBestMatch(const Node * node, const Slice & k) const;
 
-        bool CombatInsert(const Slice & opponent, const Slice & k, const Slice & v);
+        bool CombatInsert(const Slice & opponent, const Slice & k, const Slice & v, Node * hint);
 
         void NodeSplit(Node * parent);
 

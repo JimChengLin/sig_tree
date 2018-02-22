@@ -10,7 +10,7 @@
 
 namespace sgt {
     namespace sig_tree_bench {
-        // 比较次数
+        // 字符串比较次数
         unsigned int sig_tree_cmp_times = 0;
         unsigned int std_set_cmp_times = 0;
 
@@ -54,7 +54,6 @@ namespace sgt {
 
         /*
          * Helper 接口定义了如何生成和使用 KV Token
-         * 可以理解为 KV => Token 的单向映射
          */
         class Helper : public SignatureTreeTpl<KVTrans>::Helper {
         public:
@@ -64,7 +63,7 @@ namespace sgt {
             // 根据要存储的 KV 返回一个 Token
             uint64_t Add(const Slice & k, const Slice & v) override {
                 // 我确信 k.data() 会返回一个外部的 C 式字符串
-                // 如果需要交接资源所有权, 还可以在这里进行移动/复制
+                // 如果需要交接资源所有权, 可以在这里进行移动/复制
                 return reinterpret_cast<uintptr_t>(k.data());
             }
 
@@ -73,7 +72,7 @@ namespace sgt {
             }
 
             // Allocator.AllocatePage() 后获得的 offset 必须要能够打包进 Token
-            // 言下之意就是 Token(默认类型 uint64_t) 的空间内必须能表达两种数据
+            // 言下之意就是 Token(默认类型 uint64_t) 的空间内必须能自省表达两种数据
             // union Token {
             //   TokenByAdd a;
             //   TokenByAllocatePage b;
@@ -95,7 +94,7 @@ namespace sgt {
 
             KVTrans Trans(const uint64_t & rep) const override {
                 // Token(rep) => KVTrans => KV
-                return KVTrans(reinterpret_cast<const char *>(static_cast<uintptr_t>(rep)));
+                return KVTrans(reinterpret_cast<char *>(static_cast<uintptr_t>(rep)));
             }
 
             uint64_t GetNullRep() const override {
@@ -132,7 +131,7 @@ namespace sgt {
 
             // 分配一页内存, 大小为 kPageSize
             // 如果是 mmap 且需要扩容才能完成分配, 务必 throw AllocatorFullException
-            // SGT 会捕获这一异常并调用 Grow(), 根据 Base() 重新计算内存位置
+            // SGT 会捕获这一异常并调用 Grow(), 再根据 Base() 重新计算内存位置
             size_t AllocatePage() override {
                 auto page = reinterpret_cast<uintptr_t>(malloc(kPageSize));
                 records_.emplace(page);
@@ -153,12 +152,10 @@ namespace sgt {
 
         // --- 实现接口 - 结束
 
-        using ms = std::chrono::milliseconds;
-
 #define TIME_START auto start = std::chrono::high_resolution_clock::now()
 #define TIME_END auto end = std::chrono::high_resolution_clock::now()
 #define PRINT_TIME(name) \
-std::cout << #name " took " << std::chrono::duration_cast<ms>(end - start).count() << " milliseconds" << std::endl
+std::cout << #name " took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " milliseconds" << std::endl
 
         void Run() {
             auto seed = std::random_device()();
@@ -189,7 +186,7 @@ std::cout << #name " took " << std::chrono::duration_cast<ms>(end - start).count
             };
             std::set<const char *, cmp> set;
 
-            // "Add" - 开始
+            // Add - 开始
             {
                 TIME_START;
                 for (const auto & s:src) {
@@ -206,9 +203,9 @@ std::cout << #name " took " << std::chrono::duration_cast<ms>(end - start).count
                 TIME_END;
                 PRINT_TIME(std::set - emplace);
             }
-            // "Add" - 结束
+            // Add - 结束
 
-            // "Get" - 开始
+            // Get - 开始
             {
                 TIME_START;
                 for (const auto & s:src) {
@@ -225,10 +222,11 @@ std::cout << #name " took " << std::chrono::duration_cast<ms>(end - start).count
                 TIME_END;
                 PRINT_TIME(std::set - find);
             }
-            // "Get" - 结束
+            // Get - 结束
 
             // 比较次数统计
             std::cout << "sig_tree_cmp_times: " << sig_tree_cmp_times << std::endl;
+            std::cout << "sig_tree_mem_pages: " << allocator.records_.size() << std::endl;
             std::cout << "std_set_cmp_times: " << std_set_cmp_times << std::endl;
 
             for (auto & s:src) {

@@ -87,7 +87,7 @@ namespace sgt {
                         return false;
                     }
                 } else { // insert
-                    return CombatInsert(trans.Key(), k, v);
+                    return CombatInsert(trans.Key(), k, v, cursor);
                 }
             }
         }
@@ -186,7 +186,7 @@ namespace sgt {
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     bool SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
-    CombatInsert(const Slice & opponent, const Slice & k, const Slice & v) {
+    CombatInsert(const Slice & opponent, const Slice & k, const Slice & v, Node * hint) {
         K_DIFF diff_at = 0;
         while (opponent[diff_at] == k[diff_at]) {
             ++diff_at;
@@ -200,7 +200,8 @@ namespace sgt {
         auto direct = static_cast<bool>((1 + (CharToUint8(k[diff_at]) | mask)) >> 8);
 
         K_DIFF packed_diff = PackDiffAtAndShift(diff_at, shift);
-        Node * cursor = OffsetToMemNode(kRootOffset);
+        Node * cursor = hint;
+        restart:
         while (true) {
             size_t insert_idx;
             bool insert_direct;
@@ -224,6 +225,11 @@ namespace sgt {
                 while (true) {
                     assert(min_it == std::min_element(cbegin, cend));
                     if (*min_it > packed_diff) {
+                        if (hint != nullptr) {
+                            hint = (nullptr);
+                            cursor = OffsetToMemNode(kRootOffset);
+                            goto restart;
+                        }
                         if (!direct) {
                             insert_idx = cbegin - cursor->diffs_.cbegin();
                         } else {
@@ -232,6 +238,7 @@ namespace sgt {
                         insert_direct = direct;
                         break;
                     }
+                    hint = nullptr;
 
                     K_DIFF crit_diff_at;
                     uint8_t crit_shift;
@@ -295,6 +302,73 @@ namespace sgt {
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     void SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     NodeSplit(Node * parent) {
+        for (size_t i = 0; i < parent->reps_.size(); ++i) {
+            const auto & rep = parent->reps_[i];
+            if (helper_->IsPacked(rep)) {
+                Node * child = OffsetToMemNode(helper_->Unpack(rep));
+                if (!IsNodeFull(child)) {
+                    size_t child_size = NodeSize(child);
+
+                    // left child or right child?
+                    if (i == 0 ||
+                        (i != parent->reps_.size() - 1 && parent->diffs_[i - 1] < parent->diffs_[i])) { // left
+
+                        // how long?
+                        size_t j = i + 1;
+                        for (; j < parent->diffs_.size(); ++j) {
+                            if (parent->diffs_[j] < parent->diffs_[i]) {
+                                break;
+                            }
+                        }
+
+                        // enough space?
+                        size_t range = j - i;
+                        if (child_size + range <= child->reps_.size()) { // move to the tail
+                            cpy_part(child->diffs_, child_size - 1, parent->diffs_, i, range);
+                            cpy_part(child->reps_, child_size, parent->reps_, i + 1, range);
+
+                            del_gaps(parent->diffs_, i, parent->diffs_.size(), range);
+                            del_gaps(parent->reps_, i + 1, parent->reps_.size(), range);
+                            std::fill(parent->reps_.end() - range, parent->reps_.end(), kNullRep);
+
+                            assert(NodeSize(parent) == parent->reps_.size() - range);
+                            assert(NodeSize(child) == child_size + range);
+                            parent->dirty_ = true;
+                            child->dirty_ = true;
+                            return;
+                        }
+                    } else { // right
+
+                        size_t j = i - 1;
+                        while (j != 0) {
+                            if (parent->diffs_[j - 1] < parent->diffs_[i - 1]) {
+                                break;
+                            }
+                            --j;
+                        }
+
+                        size_t range = i - j;
+                        if (child_size + range <= child->reps_.size()) { // move to the head
+                            add_gaps(child->diffs_, 0, child_size - 1, range);
+                            add_gaps(child->reps_, 0, child_size, range);
+                            cpy_part(child->diffs_, 0, parent->diffs_, j, range);
+                            cpy_part(child->reps_, 0, parent->reps_, j, range);
+
+                            del_gaps(parent->diffs_, j, parent->diffs_.size(), range);
+                            del_gaps(parent->reps_, j, parent->reps_.size(), range);
+                            std::fill(parent->reps_.end() - range, parent->reps_.end(), kNullRep);
+
+                            assert(NodeSize(parent) == parent->reps_.size() - range);
+                            assert(NodeSize(child) == child_size + range);
+                            parent->dirty_ = true;
+                            child->dirty_ = true;
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
         size_t offset = allocator_->AllocatePage(); // may throw AllocatorFullException
         Node * child = new(OffsetToMemNode(offset)) Node();
 

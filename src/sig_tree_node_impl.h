@@ -128,8 +128,7 @@ namespace sgt {
         }
 
         size_t level = 0;
-        restart:
-        if (end_pos - pos > 1) {
+        while (end_pos - pos > 1) {
             const size_t q = pos / 8;
             const size_t r = pos % 8;
 
@@ -142,7 +141,6 @@ namespace sgt {
 
             *const_cast<K_DIFF *>(from) = *min_elem;
             idxes_[kAbsOffsets[level++] + pos] = static_cast<uint8_t>(idx);
-            goto restart;
         }
         return CalcOffset(level - 1, pos);
     }
@@ -159,8 +157,7 @@ namespace sgt {
         }
 
         size_t level = 0;
-        restart:
-        if (end_pos - pos > 1) {
+        while (end_pos - pos > 1) {
             size_t q = end_pos / 8;
             size_t r = end_pos % 8;
             if (r == 0) {
@@ -178,7 +175,6 @@ namespace sgt {
 
             *const_cast<K_DIFF *>(to - 1) = *min_elem;
             idxes_[kAbsOffsets[level++] + end_pos - 1] = static_cast<uint8_t>(idx);
-            goto restart;
         }
         return CalcOffset(level - 1, pos);
     }
