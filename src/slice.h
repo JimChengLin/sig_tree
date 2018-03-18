@@ -93,11 +93,11 @@ namespace sgt {
         }
     };
 
-    template<typename T>
-    inline T & operator<<(T & os, const Slice & s) {
+    template<typename O, typename S, typename = std::enable_if_t<std::is_same<S, Slice>::value>>
+    inline O & operator<<(O & os, const S & s) {
         for (size_t i = 0; i < s.size(); ++i) {
             char c = s[i];
-            if (isprint(c) || c == '\n') {
+            if (isprint(c)) {
                 os << c;
             } else {
                 os << '['

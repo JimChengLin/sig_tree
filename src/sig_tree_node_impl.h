@@ -4,7 +4,9 @@
 
 #if __has_include(<smmintrin.h>)
 #include <smmintrin.h>
+#ifndef HAS_MINPOS
 #define HAS_MINPOS true
+#endif
 #else
 #define HAS_MINPOS false
 #endif
