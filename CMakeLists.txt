@@ -3,6 +3,8 @@ project(sig_tree)
 
 set(CMAKE_CXX_STANDARD 17)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.2")
+
 add_executable(sig_tree main.cpp
         bench/sig_tree_bench.cpp
         src/allocator.h
