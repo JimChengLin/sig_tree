@@ -93,6 +93,12 @@ namespace sgt {
         }
     };
 
+    struct SliceHasher {
+        std::size_t operator()(const Slice & s) const {
+            return std::hash<std::string_view>()({s.data(), s.size()});
+        }
+    };
+
     template<typename O, typename S, typename = std::enable_if_t<std::is_same<S, Slice>::value>>
     inline O & operator<<(O & os, const S & s) {
         for (size_t i = 0; i < s.size(); ++i) {
