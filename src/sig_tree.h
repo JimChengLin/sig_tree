@@ -154,8 +154,8 @@ namespace sgt {
             enum {
                 kSize = sizeof(NodeTpl<RANK>),
                 value = kSize > kPageSize
-                        ? NodeRank<RANK - 1, false>::value
-                        : NodeRank<RANK + 1, !(kSize > kPageSize)>::value
+                        ? static_cast<int>(NodeRank<RANK - 1, false>::value)
+                        : static_cast<int>(NodeRank<RANK + 1, !(kSize > kPageSize)>::value)
             };
         };
         template<size_t RANK>
