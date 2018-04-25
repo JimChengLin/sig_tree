@@ -10,6 +10,7 @@
  */
 
 #include <optional>
+#include <vector>
 
 #include "iterator.h"
 #include "sig_tree.h"
