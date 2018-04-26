@@ -99,7 +99,11 @@ namespace sgt {
             }
 
         public:
-            void * Base() const override {
+            void * Base() override {
+                return nullptr;
+            }
+
+            const void * Base() const override {
                 return nullptr;
             }
 

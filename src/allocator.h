@@ -23,7 +23,9 @@ namespace sgt {
         virtual ~Allocator() = default;
 
     public:
-        virtual void * Base() const = 0;
+        virtual void * Base() = 0;
+
+        virtual const void * Base() const = 0;
 
         // 如无法分配, 抛出 AllocatorFullException
         virtual size_t AllocatePage() = 0;

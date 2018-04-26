@@ -126,7 +126,11 @@ namespace sgt {
             // 合理性在于如果使用 mmap, 有可能需要 re-mmap
             // 相同的偏移量永远能得到相同的内容, 尽管 Base() 可能返回不同的值
             // 如果是内存索引直接返回 0(nullptr) 即可
-            void * Base() const override {
+            void * Base() override {
+                return nullptr;
+            }
+
+            const void * Base() const override {
                 return nullptr;
             }
 
