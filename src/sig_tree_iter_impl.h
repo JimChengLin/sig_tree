@@ -9,7 +9,6 @@
  * Seek 语义是 PrefixSeek 而非 std::lower_bound
  */
 
-#include <optional>
 #include <vector>
 
 #include "iterator.h"
@@ -22,8 +21,8 @@ namespace sgt {
         const SignatureTreeTpl * tree_;
         std::vector<std::pair<size_t /* node offset */, ssize_t /* KV_REP idx */> > que_;
         // lazy eval
-        mutable std::string out_;
-        mutable std::optional<KV_TRANS> trans_;
+        mutable std::string k_;
+        mutable std::string v_;
 
     public:
         explicit IteratorImpl(const SignatureTreeTpl * tree) : tree_(tree) {}
@@ -37,7 +36,7 @@ namespace sgt {
 
         void SeekToFirst() override { // leftmost node
             que_.clear();
-            trans_.reset();
+            k_.clear();
 
             size_t offset = tree_->kRootOffset;
             const Node * cursor = tree_->OffsetToMemNode(offset);
@@ -59,7 +58,7 @@ namespace sgt {
 
         void SeekToLast() override { // rightmost node
             que_.clear();
-            trans_.reset();
+            k_.clear();
 
             size_t offset = tree_->kRootOffset;
             const Node * cursor = tree_->OffsetToMemNode(offset);
@@ -83,7 +82,7 @@ namespace sgt {
 
         void Seek(const Slice & target) override {
             que_.clear();
-            trans_.reset();
+            k_.clear();
 
             size_t offset = tree_->kRootOffset;
             const Node * cursor = tree_->OffsetToMemNode(offset);
@@ -109,7 +108,7 @@ namespace sgt {
         }
 
         void Next() override {
-            trans_.reset();
+            k_.clear();
             while (!que_.empty()) {
                 size_t node_offset;
                 ssize_t rep_idx;
@@ -132,7 +131,7 @@ namespace sgt {
         }
 
         void Prev() override {
-            trans_.reset();
+            k_.clear();
             while (!que_.empty()) {
                 size_t node_offset;
                 ssize_t rep_idx;
@@ -156,26 +155,21 @@ namespace sgt {
         }
 
         Slice Key() const override {
-            if (trans_.has_value()) {
-                return trans_.value().Key();
+            if (!k_.empty()) {
+                return k_;
             } else {
-                const Node * cursor = tree_->OffsetToMemNode(que_.back().first);
-                trans_.emplace(tree_->helper_->Trans(cursor->reps_[que_.back().second]));
-                out_.clear();
+                const auto * cursor = tree_->OffsetToMemNode(que_.back().first);
+                const auto & trans = tree_->helper_->Trans(cursor->reps_[que_.back().second]);
+                const auto & s = trans.Key();
+                k_.assign(s.data(), s.size());
+                trans.Get(k_, &v_);
                 return Key();
             }
         }
 
         Slice Value() const override {
-            if (trans_.has_value()) {
-                if (out_.empty()) {
-                    trans_.value().Get(trans_.value().Key(), &out_);
-                }
-                return out_;
-            } else {
-                Key();
-                return Value();
-            }
+            Key();
+            return v_;
         }
     };
 
