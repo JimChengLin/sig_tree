@@ -96,13 +96,20 @@ namespace sgt {
     template<typename T>
     const T * SmartMinElem8(const T * from, const T * to) {
         if constexpr (std::is_same<T, uint16_t>::value && HAS_MINPOS) {
-            if (to - from < 8) {
+            size_t size = to - from;
+            if (size < 4) {
                 return std::min_element(from, to);
+            } else if (size < 8) {
+                __m128i vec = _mm_set1_epi64x(-1);
+                memcpy(&vec, from, sizeof(T) * size);
+                __m128i res = _mm_minpos_epu16(vec);
+                return from + _mm_extract_epi16(res, 1);
+            } else {
+                assert(size == 8);
+                __m128i vec = _mm_loadu_si128(reinterpret_cast<const __m128i *>(from));
+                __m128i res = _mm_minpos_epu16(vec);
+                return from + _mm_extract_epi16(res, 1);
             }
-            assert(to - from == 8);
-            __m128i vec = _mm_loadu_si128(reinterpret_cast<const __m128i *>(from));
-            __m128i res = _mm_minpos_epu16(vec);
-            return from + _mm_extract_epi16(res, 1);
         } else {
             return std::min_element(from, to);
         }
@@ -112,10 +119,11 @@ namespace sgt {
     template<size_t RANK>
     size_t SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     NodeTpl<RANK>::Pyramid::MinAt(const K_DIFF * from, const K_DIFF * to) const {
-        if (to - from <= 8) {
+        size_t size = to - from;
+        if (size <= 8) {
             return SmartMinElem8(from, to) - from;
         }
-        return CalcOffset(PyramidHeight(to - from) - 1, 0);
+        return CalcOffset(PyramidHeight(size) - 1, 0);
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
