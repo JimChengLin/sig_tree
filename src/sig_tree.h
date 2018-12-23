@@ -200,9 +200,9 @@ namespace sgt {
             return (diff_at << 3) | ((~shift) & 0b111);
         }
 
-        static void UnpackDiffAtAndShift(K_DIFF packed_diff, K_DIFF * diff_at, uint8_t * shift) {
-            (*diff_at) = packed_diff >> 3;
-            (*shift) = (~packed_diff) & 0b111;
+        static std::pair<K_DIFF, uint8_t>
+        UnpackDiffAtAndShift(K_DIFF packed_diff) {
+            return {packed_diff >> 3, (~packed_diff) & 0b111};
         }
 
     public:

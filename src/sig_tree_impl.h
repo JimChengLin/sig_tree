@@ -21,6 +21,9 @@ namespace sgt {
     bool SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     Get(const Slice & k, std::string * v) const {
         const Node * cursor = OffsetToMemNode(kRootOffset);
+        if (SGT_UNLIKELY(cursor->reps_[0] == kNullRep)) {
+            return false;
+        }
 
         while (true) {
             size_t idx;
@@ -28,9 +31,6 @@ namespace sgt {
             std::tie(idx, direct, std::ignore) = FindBestMatch(cursor, k);
 
             const auto & rep = cursor->reps_[idx + direct];
-            if (SGT_UNLIKELY(rep == kNullRep)) {
-                return false;
-            }
             if (helper_->IsPacked(rep)) {
                 cursor = OffsetToMemNode(helper_->Unpack(rep));
             } else {
@@ -68,6 +68,11 @@ namespace sgt {
         IF_DUP_CALLBACK && if_dup_callback) {
         assert(k.size() < GetMaxKeyLength());
         Node * cursor = OffsetToMemNode(kRootOffset);
+        if (SGT_UNLIKELY(cursor->reps_[0] == kNullRep)) {
+            cursor->reps_[0] = helper_->Add(k, v);
+            cursor->size_ = 1;
+            return true;
+        }
 
         while (true) {
             size_t idx;
@@ -75,11 +80,6 @@ namespace sgt {
             std::tie(idx, direct, std::ignore) = FindBestMatch(cursor, k);
 
             auto & rep = cursor->reps_[idx + direct];
-            if (SGT_UNLIKELY(rep == kNullRep)) {
-                *(&rep) = helper_->Add(k, v);
-                cursor->size_ = 1;
-                return true;
-            }
             if (helper_->IsPacked(rep)) {
                 cursor = OffsetToMemNode(helper_->Unpack(rep));
             } else {
@@ -100,8 +100,12 @@ namespace sgt {
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     bool SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     Del(const Slice & k) {
-        Node * parent = nullptr;
         Node * cursor = OffsetToMemNode(kRootOffset);
+        if (SGT_UNLIKELY(cursor->reps_[0] == kNullRep)) {
+            return false;
+        }
+
+        Node * parent = nullptr;
         size_t parent_idx;
         bool parent_direct;
         size_t parent_size;
@@ -113,9 +117,6 @@ namespace sgt {
             std::tie(idx, direct, size) = FindBestMatch(cursor, k);
 
             const auto & rep = cursor->reps_[idx + direct];
-            if (SGT_UNLIKELY(rep == kNullRep)) {
-                return false;
-            }
             if (helper_->IsPacked(rep)) {
                 parent = cursor;
                 parent_idx = idx;
@@ -143,13 +144,13 @@ namespace sgt {
     std::tuple<size_t, bool, size_t>
     SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     FindBestMatch(const Node * node, const Slice & k) const {
-        const K_DIFF * cbegin = node->diffs_.cbegin();
-        const K_DIFF * cend;
-
         size_t size = NodeSize(node);
         if (SGT_UNLIKELY(size <= 1)) {
             return {0, false, size};
         }
+
+        const K_DIFF * cbegin = node->diffs_.cbegin();
+        const K_DIFF * cend;
         size_t diffs_size = size - 1;
         cend = &node->diffs_[diffs_size];
 
@@ -164,7 +165,7 @@ namespace sgt {
             assert(min_it == std::min_element(cbegin, cend));
             K_DIFF diff_at;
             uint8_t shift;
-            UnpackDiffAtAndShift(*min_it, &diff_at, &shift);
+            std::tie(diff_at, shift) = UnpackDiffAtAndShift(*min_it);
             uint8_t mask = ~(static_cast<uint8_t>(1) << shift);
 
             // left or right?
@@ -228,9 +229,10 @@ namespace sgt {
                 const K_DIFF * min_it = cbegin + pyramid.MinAt(cbegin, cend);
                 while (true) {
                     assert(min_it == std::min_element(cbegin, cend));
-                    if (*min_it > packed_diff) {
+                    K_DIFF exist_diff = *min_it;
+                    if (exist_diff > packed_diff) {
                         if (hint != nullptr) {
-                            hint = (nullptr);
+                            hint = nullptr;
                             cursor = OffsetToMemNode(kRootOffset);
                             goto restart;
                         }
@@ -246,7 +248,7 @@ namespace sgt {
 
                     K_DIFF crit_diff_at;
                     uint8_t crit_shift;
-                    UnpackDiffAtAndShift(*min_it, &crit_diff_at, &crit_shift);
+                    std::tie(crit_diff_at, crit_shift) = UnpackDiffAtAndShift(exist_diff);
                     uint8_t crit_mask = ~(static_cast<uint8_t>(1) << crit_shift);
 
                     uint8_t crit_byte = k.size() > crit_diff_at
@@ -417,7 +419,7 @@ namespace sgt {
         parent->reps_[nth] = helper_->Pack(offset);
         std::fill(parent->reps_.end() - item_num, parent->reps_.end(), kNullRep);
 
-        child->size_ = item_num + 1;
+        child->size_ = static_cast<uint32_t>(item_num) + 1;
         parent->size_ -= item_num;
         assert(NodeSize(parent) == parent->reps_.size() - item_num);
         parent->dirty_ = true;
