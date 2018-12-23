@@ -62,9 +62,10 @@ namespace sgt {
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
+    template<typename IF_DUP_CALLBACK>
     bool SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     Add(const Slice & k, const Slice & v,
-        const std::function<bool(KV_TRANS &, KV_REP &)> & if_dup_callback) {
+        IF_DUP_CALLBACK && if_dup_callback) {
         assert(k.size() < GetMaxKeyLength());
         Node * cursor = OffsetToMemNode(kRootOffset);
 
@@ -76,6 +77,7 @@ namespace sgt {
             auto & rep = cursor->reps_[idx + direct];
             if (SGT_UNLIKELY(rep == kNullRep)) {
                 *(&rep) = helper_->Add(k, v);
+                cursor->size_ = 1;
                 return true;
             }
             if (helper_->IsPacked(rep)) {
@@ -83,7 +85,7 @@ namespace sgt {
             } else {
                 auto && trans = helper_->Trans(rep);
                 if (trans == k) {
-                    if (if_dup_callback != nullptr) {
+                    if constexpr (!std::is_same<IF_DUP_CALLBACK, std::false_type>::value) {
                         return if_dup_callback(trans, rep);
                     } else { // cannot overwrite by default
                         return false;
@@ -333,6 +335,8 @@ namespace sgt {
                             del_gaps(parent->reps_, i + 1, parent->reps_.size(), range);
                             std::fill(parent->reps_.end() - range, parent->reps_.end(), kNullRep);
 
+                            parent->size_ -= range;
+                            child->size_ += range;
                             assert(NodeSize(parent) == parent->reps_.size() - range);
                             assert(NodeSize(child) == child_size + range);
                             parent->dirty_ = true;
@@ -360,6 +364,8 @@ namespace sgt {
                             del_gaps(parent->reps_, j, parent->reps_.size(), range);
                             std::fill(parent->reps_.end() - range, parent->reps_.end(), kNullRep);
 
+                            parent->size_ -= range;
+                            child->size_ += range;
                             assert(NodeSize(parent) == parent->reps_.size() - range);
                             assert(NodeSize(child) == child_size + range);
                             parent->dirty_ = true;
@@ -411,6 +417,8 @@ namespace sgt {
         parent->reps_[nth] = helper_->Pack(offset);
         std::fill(parent->reps_.end() - item_num, parent->reps_.end(), kNullRep);
 
+        child->size_ = item_num + 1;
+        parent->size_ -= item_num;
         assert(NodeSize(parent) == parent->reps_.size() - item_num);
         parent->dirty_ = true;
     }
@@ -429,6 +437,7 @@ namespace sgt {
         cpy_part(parent->reps_, idx, child->reps_, 0, child_size);
 
         allocator_->FreePage(offset);
+        parent->size_ += child_size - 1;
         parent->dirty_ = true;
     }
 
@@ -445,6 +454,7 @@ namespace sgt {
 
         node->diffs_[insert_idx] = diff;
         node->reps_[rep_idx] = rep;
+        ++node->size_;
         node->dirty_ = true;
     }
 
@@ -458,6 +468,7 @@ namespace sgt {
         del_gap(node->reps_, idx + direct, size);
 
         node->reps_[size - 1] = kNullRep;
+        --node->size_;
         node->dirty_ = true;
     }
 

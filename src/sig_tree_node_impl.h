@@ -17,8 +17,12 @@ namespace sgt {
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     size_t SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     NodeSize(const Node * node) const {
+#if defined(NDEBUG)
+        return node->size_;
+#else
         const auto & reps = node->reps_;
         if (IsNodeFull(node)) {
+            assert(node->size_ == reps.size());
             return reps.size();
         }
         size_t lo = 0;
@@ -31,7 +35,9 @@ namespace sgt {
                 lo = mid + 1;
             }
         }
+        assert(node->size_ == lo);
         return lo;
+#endif
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>

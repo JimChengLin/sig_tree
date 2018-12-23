@@ -13,7 +13,6 @@
  */
 
 #include <array>
-#include <functional>
 
 #include "allocator.h"
 #include "kv_trans_trait.h"
@@ -77,8 +76,10 @@ namespace sgt {
 
         size_t Size() const;
 
+        // bool(* if_dup_callback)(KV_TRANS & trans, KV_REP & rep)
+        template<typename IF_DUP_CALLBACK  = std::false_type>
         bool Add(const Slice & k, const Slice & v,
-                 const std::function<bool(KV_TRANS & trans, KV_REP & rep)> & if_dup_callback = nullptr);
+                 IF_DUP_CALLBACK && if_dup_callback = {});
 
         bool Del(const Slice & k);
 
@@ -145,8 +146,9 @@ namespace sgt {
 
             std::array<KV_REP, RANK + 1> reps_;
             std::array<K_DIFF, RANK> diffs_;
-            Pyramid pyramid_;
             bool dirty_ = true;
+            uint32_t size_ = 0;
+            Pyramid pyramid_;
         };
 
         template<size_t RANK = 1, bool UP = true>
