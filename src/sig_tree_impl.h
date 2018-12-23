@@ -91,7 +91,8 @@ namespace sgt {
                         return false;
                     }
                 } else { // insert
-                    return CombatInsert(trans.Key(), k, v, cursor);
+                    return CombatInsert(trans.Key(), k, v,
+                                        cursor, idx, direct);
                 }
             }
         }
@@ -191,7 +192,8 @@ namespace sgt {
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     bool SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
-    CombatInsert(const Slice & opponent, const Slice & k, const Slice & v, Node * hint) {
+    CombatInsert(const Slice & opponent, const Slice & k, const Slice & v,
+                 Node * hint, size_t hint_idx, bool hint_direct) {
         K_DIFF diff_at = 0;
         while (opponent[diff_at] == k[diff_at]) {
             ++diff_at;
@@ -215,6 +217,10 @@ namespace sgt {
             if (SGT_UNLIKELY(cursor_size == 1)) {
                 insert_idx = 0;
                 insert_direct = false;
+            } else if (hint != nullptr && packed_diff > hint->diffs_[hint_idx]) {
+                insert_idx = hint_idx;
+                insert_direct = hint_direct;
+                hint = nullptr;
             } else {
                 size_t cursor_diffs_size = cursor_size - 1;
                 const K_DIFF * cbegin = cursor->diffs_.cbegin();
@@ -263,7 +269,7 @@ namespace sgt {
                             break;
                         }
                         min_it = cursor->diffs_.cbegin() +
-                                 pyramid.TrimRight(cursor->diffs_.cbegin(), cbegin, cend);
+                                pyramid.TrimRight(cursor->diffs_.cbegin(), cbegin, cend);
                     } else {
                         cbegin = min_it + 1;
                         if (cbegin == cend) {
@@ -272,7 +278,7 @@ namespace sgt {
                             break;
                         }
                         min_it = cursor->diffs_.cbegin() +
-                                 pyramid.TrimLeft(cursor->diffs_.cbegin(), cbegin, cend);
+                                pyramid.TrimLeft(cursor->diffs_.cbegin(), cbegin, cend);
                     }
                 }
             }
