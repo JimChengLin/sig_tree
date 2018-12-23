@@ -103,10 +103,6 @@ namespace sgt {
                 return nullptr;
             }
 
-            const void * Base() const override {
-                return nullptr;
-            }
-
             size_t AllocatePage() override {
                 auto page = reinterpret_cast<uintptr_t>(malloc(kPageSize));
                 records_.emplace(page);

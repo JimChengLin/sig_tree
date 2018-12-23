@@ -130,10 +130,6 @@ namespace sgt {
                 return nullptr;
             }
 
-            const void * Base() const override {
-                return nullptr;
-            }
-
             // 分配一页内存, 大小为 kPageSize
             // 如果是 mmap 且需要扩容才能完成分配, 务必 throw AllocatorFullException
             // SGT 会捕获这一异常并调用 Grow(), 再根据 Base() 重新计算内存位置

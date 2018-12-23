@@ -3,13 +3,15 @@
 #define SIG_TREE_SLICE_H
 
 /*
- * 数据封装类
+ * 数据引用类
  */
 
 #include <cassert>
 #include <cstring>
 #include <string>
 #include <type_traits>
+
+#include "coding.h"
 
 namespace sgt {
     class Slice {
@@ -44,8 +46,6 @@ namespace sgt {
         // same as STL
         size_t size() const { return size_; }
 
-        std::string ToString() const { return {data_, size_}; }
-
         const char & operator[](size_t n) const {
             assert(n < size_);
             return data_[n];
@@ -56,18 +56,14 @@ namespace sgt {
         }
 
         bool operator!=(const Slice & another) const { return !operator==(another); }
+
+        std::string_view ToStringView() const { return {data_, size_}; }
     };
 
     inline int SliceCmp(const Slice & a, const Slice & b) {
         int r = memcmp(a.data(), b.data(), std::min(a.size(), b.size()));
         if (r == 0) {
-            if (a.size() < b.size()) {
-                return -1;
-            } else if (a.size() == b.size()) {
-                return 0;
-            } else {
-                return +1;
-            }
+            r -= static_cast<int>(static_cast<ssize_t>(b.size()) - static_cast<ssize_t>(a.size()));
         }
         return r;
     }
@@ -80,8 +76,7 @@ namespace sgt {
         }
 
         bool operator()(const Slice & a, const Slice & b) const {
-            int r = SliceCmp(a, b);
-            return r < 0;
+            return SliceCmp(a, b) < 0;
         }
 
         bool operator()(const std::string & a, const Slice & b) const {
@@ -95,23 +90,23 @@ namespace sgt {
 
     struct SliceHasher {
         std::size_t operator()(const Slice & s) const {
-            return std::hash<std::string_view>()({s.data(), s.size()});
+            return std::hash<std::string_view>()(s.ToStringView());
         }
     };
 
     template<typename O, typename S, typename = std::enable_if_t<std::is_same<S, Slice>::value>>
-    inline O & operator<<(O & os, const S & s) {
+    inline O & operator<<(O & o, const S & s) {
         for (size_t i = 0; i < s.size(); ++i) {
             char c = s[i];
             if (isprint(c)) {
-                os << c;
+                o << c;
             } else {
-                os << '['
-                   << static_cast<unsigned int>(*reinterpret_cast<unsigned char *>(&c))
-                   << ']';
+                o << '['
+                  << static_cast<unsigned int>(CharToUint8(c))
+                  << ']';
             }
         }
-        return os;
+        return o;
     }
 }
 
