@@ -269,7 +269,7 @@ namespace sgt {
                             break;
                         }
                         min_it = cursor->diffs_.cbegin() +
-                                pyramid.TrimRight(cursor->diffs_.cbegin(), cbegin, cend);
+                                 pyramid.TrimRight(cursor->diffs_.cbegin(), cbegin, cend);
                     } else {
                         cbegin = min_it + 1;
                         if (cbegin == cend) {
@@ -278,7 +278,7 @@ namespace sgt {
                             break;
                         }
                         min_it = cursor->diffs_.cbegin() +
-                                pyramid.TrimLeft(cursor->diffs_.cbegin(), cbegin, cend);
+                                 pyramid.TrimLeft(cursor->diffs_.cbegin(), cbegin, cend);
                     }
                 }
             }
