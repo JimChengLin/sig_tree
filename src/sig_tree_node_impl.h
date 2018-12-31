@@ -16,43 +16,25 @@
 namespace sgt {
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     size_t SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
-    NodeSize(const Node * node) const {
-#if defined(NDEBUG)
+    NodeSize(const Node * node) {
         return node->size_;
-#else
-        const auto & reps = node->reps_;
-        if (IsNodeFull(node)) {
-            assert(node->size_ == reps.size());
-            return reps.size();
-        }
-        size_t lo = 0;
-        size_t hi = reps.size() - 1;
-        while (lo < hi) {
-            size_t mid = (lo + hi) / 2;
-            if (reps[mid] == kNullRep) {
-                hi = mid;
-            } else {
-                lo = mid + 1;
-            }
-        }
-        assert(node->size_ == lo);
-        return lo;
-#endif
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     bool SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
-    IsNodeFull(const Node * node) const {
-        return node->reps_.back() != kNullRep;
+    IsNodeFull(const Node * node) {
+        return node->size_ == kNodeRepRank;
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     template<size_t RANK>
     void SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
-    NodeTpl<RANK>::Pyramid::Build(const K_DIFF * from, const K_DIFF * to) {
+    NodeTpl<RANK>::Pyramid::Build(const K_DIFF * from, const K_DIFF * to, size_t rebuild_idx) {
         size_t size = to - from;
         if (size <= 8) {
             return;
+        } else if (size == 9) {
+            rebuild_idx = 0;
         }
 
         size_t level = 0;
@@ -62,6 +44,13 @@ namespace sgt {
             K_DIFF * val_from = vals_.begin() + kAbsOffsets[level];
             uint8_t * idx_from = idxes_.begin() + kAbsOffsets[level++];
             const K_DIFF * next_from = val_from;
+
+            if (rebuild_idx > 0) {
+                rebuild_idx /= 8;
+                val_from += rebuild_idx;
+                idx_from += rebuild_idx;
+                from += (8 * rebuild_idx);
+            }
 
             while (to - from >= 8) {
                 K_DIFF val;
@@ -107,7 +96,7 @@ namespace sgt {
                 return std::min_element(from, to);
             } else if (size < 8) {
                 __m128i vec = _mm_set1_epi64x(-1);
-                memcpy(&vec, from, sizeof(T) * size);
+                memcpy(&vec, from, sizeof(uint16_t) * size);
                 __m128i res = _mm_minpos_epu16(vec);
                 return from + _mm_extract_epi16(res, 1);
             } else {

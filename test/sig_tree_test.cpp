@@ -5,8 +5,8 @@
 
 #include "../src/sig_tree.h"
 #include "../src/sig_tree_impl.h"
-#include "../src/sig_tree_iter_impl.h"
 #include "../src/sig_tree_node_impl.h"
+#include "../src/sig_tree_visit_impl.h"
 
 namespace sgt {
     namespace sig_tree_test {
@@ -81,10 +81,6 @@ namespace sgt {
             KVTrans Trans(const uint64_t & rep) const override {
                 return KVTrans(rep);
             }
-
-            uint64_t GetNullRep() const override {
-                return UINT64_MAX;
-            }
         };
 
         class AllocatorImpl : public Allocator {
@@ -137,8 +133,9 @@ namespace sgt {
             std::cout << "sig_tree_test_seed: " << seed << std::endl;
 
             std::default_random_engine engine(seed);
+            auto dist = std::uniform_int_distribution<uint32_t>(0, UINT32_MAX >> 1);
             for (size_t i = 0; i < kTestTimes; ++i) {
-                auto v = std::uniform_int_distribution<uint32_t>(0, UINT32_MAX >> 1)(engine);
+                auto v = dist(engine);
                 v += (v % 2 == 0);
 
                 set.emplace(v);
@@ -146,40 +143,36 @@ namespace sgt {
                 tree.Add(s, s);
                 assert(tree.Size() == set.size());
             }
+            tree.Compact();
 
             {
-                auto it = tree.GetIterator();
-                auto iter = set.cbegin();
-                auto num = 0;
-                for (it.SeekToFirst();
-                     it.Valid();
-                     it.Next()) {
-                    uint32_t v = *iter;
-                    Slice s(reinterpret_cast<char *>(&v), sizeof(v));
-                    assert(it.Key() == s);
-                    assert(it.Value() == s);
-                    ++iter;
-                    ++num;
-                }
-                assert(num == set.size());
-                assert(!it.Valid());
+                auto it = set.cbegin();
+                tree.Visit<tree.kForward>("", [&it](const uint64_t & rep) {
+                    uint32_t v = *it++;
+                    assert(v == (rep >> 32));
+                    return true;
+                });
+                assert(it == set.cend());
             }
             {
-                auto it = tree.GetIterator();
-                auto iter = set.crbegin();
-                auto num = 0;
-                for (it.SeekToLast();
-                     it.Valid();
-                     it.Prev()) {
-                    uint32_t v = *iter;
-                    Slice s(reinterpret_cast<char *>(&v), sizeof(v));
-                    assert(it.Key() == s);
-                    assert(it.Value() == s);
-                    ++iter;
-                    ++num;
-                }
-                assert(num == set.size());
-                assert(!it.Valid());
+                auto it = set.crbegin();
+                tree.Visit<tree.kBackward>("", [&it](const uint64_t & rep) {
+                    uint32_t v = *it++;
+                    assert(v == (rep >> 32));
+                    return true;
+                });
+                assert(it == set.crend());
+            }
+            {
+                auto v = dist(engine);
+                auto it = set.lower_bound(v);
+                Slice s(reinterpret_cast<char *>(&v), sizeof(v));
+                tree.Visit<tree.kForward>(s, [&it](const uint64_t & rep) {
+                    uint32_t v = *it++;
+                    assert(v == (rep >> 32));
+                    return true;
+                });
+                assert(it == set.cend());
             }
 
             std::string out;

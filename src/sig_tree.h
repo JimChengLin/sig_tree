@@ -13,6 +13,7 @@
  */
 
 #include <array>
+#include <climits>
 
 #include "allocator.h"
 #include "kv_trans_trait.h"
@@ -46,17 +47,12 @@ namespace sgt {
             virtual bool IsPacked(const KV_REP & rep) const = 0;
 
             virtual KV_TRANS Trans(const KV_REP & rep) const = 0;
-
-            virtual KV_REP GetNullRep() const = 0;
         };
-
-        class IteratorImpl;
 
     private:
         Helper * const helper_;
         Allocator * const allocator_;
         const size_t kRootOffset;
-        const KV_REP kNullRep;
 
     public:
         SignatureTreeTpl(Helper * helper, Allocator * allocator);
@@ -64,8 +60,7 @@ namespace sgt {
         SignatureTreeTpl(Helper * helper, Allocator * allocator, size_t root_offset)
                 : helper_(helper),
                   allocator_(allocator),
-                  kRootOffset(root_offset),
-                  kNullRep(helper->GetNullRep()) {}
+                  kRootOffset(root_offset) {}
 
         SignatureTreeTpl(const SignatureTreeTpl &) = delete;
 
@@ -76,6 +71,10 @@ namespace sgt {
 
         size_t Size() const;
 
+        // bool(* visitor)(const KV_REP & rep)
+        template<bool BACKWARD, typename VISITOR>
+        void Visit(const Slice & target, VISITOR && visitor) const;
+
         // bool(* if_dup_callback)(KV_TRANS & trans, KV_REP & rep)
         template<typename IF_DUP_CALLBACK  = std::false_type>
         bool Add(const Slice & k, const Slice & v,
@@ -83,8 +82,7 @@ namespace sgt {
 
         bool Del(const Slice & k);
 
-        SignatureTreeTpl::IteratorImpl
-        GetIterator() const;
+        void Compact();
 
     private:
         enum {
@@ -133,7 +131,7 @@ namespace sgt {
                     return arr;
                 }();
 
-                void Build(const K_DIFF * from, const K_DIFF * to);
+                void Build(const K_DIFF * from, const K_DIFF * to, size_t rebuild_idx);
 
                 size_t MinAt(const K_DIFF * from, const K_DIFF * to) const;
 
@@ -146,7 +144,6 @@ namespace sgt {
 
             std::array<KV_REP, RANK + 1> reps_;
             std::array<K_DIFF, RANK> diffs_;
-            bool dirty_ = true;
             uint32_t size_ = 0;
             Pyramid pyramid_;
         };
@@ -160,6 +157,7 @@ namespace sgt {
                         : static_cast<int>(NodeRank<RANK + 1, !(kSize > kPageSize)>::value)
             };
         };
+
         template<size_t RANK>
         struct NodeRank<RANK, false> {
             enum {
@@ -188,14 +186,18 @@ namespace sgt {
         void NodeMerge(Node * parent, size_t idx, bool direct, size_t parent_size,
                        Node * child, size_t child_size);
 
-        void NodeInsert(Node * node, size_t insert_idx, bool insert_direct,
-                        bool direct, K_DIFF diff, const KV_REP & rep, size_t size);
+        void NodeCompact(Node * node);
 
-        void NodeRemove(Node * node, size_t idx, bool direct, size_t size);
+        static void NodeInsert(Node * node, size_t insert_idx, bool insert_direct,
+                               bool direct, K_DIFF diff, const KV_REP & rep, size_t size);
 
-        size_t NodeSize(const Node * node) const;
+        static void NodeRemove(Node * node, size_t idx, bool direct, size_t size);
 
-        bool IsNodeFull(const Node * node) const;
+        static void NodeBuild(Node * node, size_t rebuild_idx = 0);
+
+        static size_t NodeSize(const Node * node);
+
+        static bool IsNodeFull(const Node * node);
 
         static K_DIFF PackDiffAtAndShift(K_DIFF diff_at, uint8_t shift) {
             return (diff_at << 3) | ((~shift) & 0b111);
@@ -207,13 +209,13 @@ namespace sgt {
         }
 
     public:
-        inline static constexpr size_t GetNodeRank() {
-            return NodeRank<>::value;
-        }
-
-        inline static constexpr size_t GetMaxKeyLength() {
-            return std::numeric_limits<K_DIFF>::max() >> 3;
-        }
+        enum {
+            kNodeRank = NodeRank<>::value,
+            kNodeRepRank = kNodeRank + 1,
+            kMaxKeyLength = std::numeric_limits<K_DIFF>::max() >> 3,
+            kForward = false,
+            kBackward = true,
+        };
     };
 }
 

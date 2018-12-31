@@ -6,7 +6,6 @@
 
 #include "../src/sig_tree.h"
 #include "../src/sig_tree_impl.h"
-#include "../src/sig_tree_iter_impl.h"
 #include "../src/sig_tree_node_impl.h"
 
 namespace sgt {
@@ -96,10 +95,6 @@ namespace sgt {
             KVTrans Trans(const uint64_t & rep) const override {
                 // Token(rep) => KVTrans => KV
                 return KVTrans(reinterpret_cast<char *>(static_cast<uintptr_t>(rep)));
-            }
-
-            uint64_t GetNullRep() const override {
-                return 0; // nullptr
             }
         };
 
@@ -205,7 +200,12 @@ std::cout << #name " took " << std::chrono::duration_cast<std::chrono::milliseco
                 PRINT_TIME(std::set - emplace);
             }
             // Add - 结束
-
+            {
+                TIME_START;
+                tree.Compact();
+                TIME_END;
+                PRINT_TIME(SGT - Compact);
+            }
             // Get - 开始
             {
                 TIME_START;

@@ -2,8 +2,6 @@
 #ifndef SIG_TREE_SIG_TREE_IMPL_H
 #define SIG_TREE_SIG_TREE_IMPL_H
 
-#include <climits>
-
 #include "coding.h"
 #include "likely.h"
 #include "sig_tree.h"
@@ -13,15 +11,14 @@ namespace sgt {
     SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     SignatureTreeTpl(Helper * helper, Allocator * allocator)
             : SignatureTreeTpl(helper, allocator, allocator->AllocatePage()) {
-        auto * root = new(OffsetToMemNode(kRootOffset)) Node();
-        std::fill(root->reps_.begin(), root->reps_.end(), kNullRep);
+        new(OffsetToMemNode(kRootOffset)) Node();
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     bool SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     Get(const Slice & k, std::string * v) const {
         const Node * cursor = OffsetToMemNode(kRootOffset);
-        if (SGT_UNLIKELY(cursor->reps_[0] == kNullRep)) {
+        if (SGT_UNLIKELY(NodeSize(cursor) == 0)) {
             return false;
         }
 
@@ -46,10 +43,8 @@ namespace sgt {
         auto SizeSub = [this](size_t offset, auto && SizeSub) -> size_t {
             size_t cnt = 0;
             const Node * cursor = OffsetToMemNode(offset);
-            for (const auto & rep:cursor->reps_) {
-                if (rep == kNullRep) {
-                    break;
-                }
+            for (size_t i = 0; i < NodeSize(cursor); ++i) {
+                const auto & rep = cursor->reps_[i];
                 if (helper_->IsPacked(rep)) {
                     cnt += SizeSub(helper_->Unpack(rep), SizeSub);
                 } else {
@@ -66,9 +61,9 @@ namespace sgt {
     bool SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     Add(const Slice & k, const Slice & v,
         IF_DUP_CALLBACK && if_dup_callback) {
-        assert(k.size() < GetMaxKeyLength());
+        assert(k.size() < kMaxKeyLength);
         Node * cursor = OffsetToMemNode(kRootOffset);
-        if (SGT_UNLIKELY(cursor->reps_[0] == kNullRep)) {
+        if (SGT_UNLIKELY(NodeSize(cursor) == 0)) {
             cursor->reps_[0] = helper_->Add(k, v);
             cursor->size_ = 1;
             return true;
@@ -102,7 +97,7 @@ namespace sgt {
     bool SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     Del(const Slice & k) {
         Node * cursor = OffsetToMemNode(kRootOffset);
-        if (SGT_UNLIKELY(cursor->reps_[0] == kNullRep)) {
+        if (SGT_UNLIKELY(NodeSize(cursor) == 0)) {
             return false;
         }
 
@@ -132,6 +127,11 @@ namespace sgt {
                     if (parent != nullptr && parent->reps_.size() - parent_size + 1 >= --size) {
                         NodeMerge(parent, parent_idx, parent_direct, parent_size,
                                   cursor, size);
+                    } else if (const auto & r = cursor->reps_[0];
+                            NodeSize(cursor) == 1 && helper_->IsPacked(r)) {
+                        Node * child = OffsetToMemNode(helper_->Unpack(r));
+                        NodeMerge(cursor, 0, false, 1,
+                                  child, NodeSize(child));
                     }
                     return true;
                 } else {
@@ -139,6 +139,12 @@ namespace sgt {
                 }
             }
         }
+    }
+
+    template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
+    void SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
+    Compact() {
+        NodeCompact(OffsetToMemNode(kRootOffset));
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
@@ -151,14 +157,7 @@ namespace sgt {
         }
 
         const K_DIFF * cbegin = node->diffs_.cbegin();
-        const K_DIFF * cend;
-        size_t diffs_size = size - 1;
-        cend = &node->diffs_[diffs_size];
-
-        if (node->dirty_) {
-            const_cast<Node *>(node)->pyramid_.Build(cbegin, cend);
-            const_cast<Node *>(node)->dirty_ = false;
-        }
+        const K_DIFF * cend = &node->diffs_[size - 1];
 
         auto pyramid = node->pyramid_;
         const K_DIFF * min_it = cbegin + pyramid.MinAt(cbegin, cend);
@@ -222,14 +221,8 @@ namespace sgt {
                 insert_direct = hint_direct;
                 hint = nullptr;
             } else {
-                size_t cursor_diffs_size = cursor_size - 1;
                 const K_DIFF * cbegin = cursor->diffs_.cbegin();
-                const K_DIFF * cend = &cursor->diffs_[cursor_diffs_size];
-
-                if (cursor->dirty_) {
-                    cursor->pyramid_.Build(cbegin, cend);
-                    cursor->dirty_ = false;
-                }
+                const K_DIFF * cend = &cursor->diffs_[cursor_size - 1];
 
                 auto pyramid = cursor->pyramid_;
                 const K_DIFF * min_it = cbegin + pyramid.MinAt(cbegin, cend);
@@ -297,7 +290,8 @@ namespace sgt {
                     }
                     continue;
                 }
-                NodeInsert(cursor, insert_idx, insert_direct, direct, packed_diff, helper_->Add(k, v), cursor_size);
+                NodeInsert(cursor, insert_idx, insert_direct,
+                           direct, packed_diff, helper_->Add(k, v), cursor_size);
                 break;
             }
             cursor = OffsetToMemNode(helper_->Unpack(rep));
@@ -336,19 +330,19 @@ namespace sgt {
                         // enough space?
                         size_t range = j - i;
                         if (child_size + range <= child->reps_.size()) { // move to the tail
-                            cpy_part(child->diffs_, child_size - 1, parent->diffs_, i, range);
+                            size_t child_diff_size = child_size - 1;
+                            cpy_part(child->diffs_, child_diff_size, parent->diffs_, i, range);
                             cpy_part(child->reps_, child_size, parent->reps_, i + 1, range);
 
                             del_gaps(parent->diffs_, i, parent->diffs_.size(), range);
                             del_gaps(parent->reps_, i + 1, parent->reps_.size(), range);
-                            std::fill(parent->reps_.end() - range, parent->reps_.end(), kNullRep);
 
                             parent->size_ -= range;
                             child->size_ += range;
                             assert(NodeSize(parent) == parent->reps_.size() - range);
                             assert(NodeSize(child) == child_size + range);
-                            parent->dirty_ = true;
-                            child->dirty_ = true;
+                            NodeBuild(parent, i);
+                            NodeBuild(child, child_diff_size);
                             return;
                         }
                     } else { // right
@@ -365,19 +359,19 @@ namespace sgt {
                         if (child_size + range <= child->reps_.size()) { // move to the head
                             add_gaps(child->diffs_, 0, child_size - 1, range);
                             add_gaps(child->reps_, 0, child_size, range);
+
                             cpy_part(child->diffs_, 0, parent->diffs_, j, range);
                             cpy_part(child->reps_, 0, parent->reps_, j, range);
 
                             del_gaps(parent->diffs_, j, parent->diffs_.size(), range);
                             del_gaps(parent->reps_, j, parent->reps_.size(), range);
-                            std::fill(parent->reps_.end() - range, parent->reps_.end(), kNullRep);
 
                             parent->size_ -= range;
                             child->size_ += range;
                             assert(NodeSize(parent) == parent->reps_.size() - range);
                             assert(NodeSize(child) == child_size + range);
-                            parent->dirty_ = true;
-                            child->dirty_ = true;
+                            NodeBuild(parent, j);
+                            NodeBuild(child);
                             return;
                         }
                     }
@@ -418,17 +412,15 @@ namespace sgt {
 
         cpy_part(child->diffs_, 0, parent->diffs_, nth, item_num);
         cpy_part(child->reps_, 0, parent->reps_, nth, item_num + 1);
-        std::fill(child->reps_.begin() + (item_num + 1), child->reps_.end(), kNullRep);
 
         del_gaps(parent->diffs_, nth, parent->diffs_.size(), item_num);
         del_gaps(parent->reps_, nth + 1, parent->reps_.size(), item_num);
         parent->reps_[nth] = helper_->Pack(offset);
-        std::fill(parent->reps_.end() - item_num, parent->reps_.end(), kNullRep);
 
         child->size_ = static_cast<uint32_t>(item_num) + 1;
         parent->size_ -= item_num;
-        assert(NodeSize(parent) == parent->reps_.size() - item_num);
-        parent->dirty_ = true;
+        NodeBuild(parent, nth);
+        NodeBuild(child);
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
@@ -446,7 +438,81 @@ namespace sgt {
 
         allocator_->FreePage(offset);
         parent->size_ += child_size - 1;
-        parent->dirty_ = true;
+        NodeBuild(parent, idx);
+    }
+
+    template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
+    void SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
+    NodeCompact(Node * node) {
+        for (size_t i = 0; !IsNodeFull(node) && i < NodeSize(node); ++i) {
+            restart:
+            const auto & rep = node->reps_[i];
+            if (helper_->IsPacked(rep)) {
+                Node * child = OffsetToMemNode(helper_->Unpack(rep));
+                size_t child_size = NodeSize(child);
+                size_t node_size = NodeSize(node);
+
+                if (node->reps_.size() - node_size + 1 >= child_size) {
+                    NodeMerge(node, i, false, node_size,
+                              child, child_size);
+                    goto restart;
+                }
+
+                const K_DIFF * cbegin = child->diffs_.cbegin();
+                const K_DIFF * cend = &child->diffs_[child_size - 1];
+                const K_DIFF * min_it = cbegin + child->pyramid_.MinAt(cbegin, cend);
+                assert(min_it == std::min_element(cbegin, cend));
+
+                if (min_it - cbegin < cend - min_it) { // go left
+                    cend = min_it + 1;
+                    size_t item_num = cend - cbegin;
+                    if (item_num + node_size <= node->reps_.size()) {
+                        size_t nth = cbegin - child->diffs_.cbegin();
+
+                        add_gaps(node->diffs_, i, node_size - 1, item_num);
+                        add_gaps(node->reps_, i, node_size, item_num);
+
+                        cpy_part(node->diffs_, i, child->diffs_, 0, item_num);
+                        cpy_part(node->reps_, i, child->reps_, 0, item_num);
+
+                        del_gaps(child->diffs_, 0, child_size - 1, item_num);
+                        del_gaps(child->reps_, 0, child_size, item_num);
+
+                        node->size_ += item_num;
+                        child->size_ -= item_num;
+                        NodeBuild(node, i);
+                        NodeBuild(child);
+                        goto restart;
+                    }
+                } else { // go right
+                    cbegin = min_it;
+                    size_t item_num = cend - cbegin;
+                    if (item_num + node_size <= node->reps_.size()) {
+                        size_t nth = cbegin - child->diffs_.cbegin();
+                        size_t j = i + 1;
+
+                        add_gaps(node->diffs_, i, node_size - 1, item_num);
+                        add_gaps(node->reps_, j, node_size, item_num);
+
+                        cpy_part(node->diffs_, i, child->diffs_, nth, item_num);
+                        cpy_part(node->reps_, j, child->reps_, nth + 1, item_num);
+
+                        node->size_ += item_num;
+                        child->size_ -= item_num;
+                        NodeBuild(node, i);
+                        NodeBuild(child, nth);
+                        goto restart;
+                    }
+                }
+            }
+        }
+
+        for (size_t i = 0; i < NodeSize(node); ++i) {
+            const auto & rep = node->reps_[i];
+            if (helper_->IsPacked(rep)) {
+                NodeCompact(OffsetToMemNode(helper_->Unpack(rep)));
+            }
+        }
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
@@ -463,7 +529,7 @@ namespace sgt {
         node->diffs_[insert_idx] = diff;
         node->reps_[rep_idx] = rep;
         ++node->size_;
-        node->dirty_ = true;
+        NodeBuild(node, insert_idx);
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
@@ -475,9 +541,16 @@ namespace sgt {
         }
         del_gap(node->reps_, idx + direct, size);
 
-        node->reps_[size - 1] = kNullRep;
         --node->size_;
-        node->dirty_ = true;
+        if (SGT_LIKELY(NodeSize(node) > 1)) {
+            NodeBuild(node, idx);
+        }
+    }
+
+    template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
+    void SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
+    NodeBuild(Node * node, size_t rebuild_idx) {
+        node->pyramid_.Build(node->diffs_.data(), node->diffs_.data() + NodeSize(node) - 1, rebuild_idx);
     }
 
 #undef add_gap
