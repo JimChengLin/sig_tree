@@ -1,3 +1,4 @@
 /.idea/
 /.vscode/
 /cmake-*/
+.DS_Store

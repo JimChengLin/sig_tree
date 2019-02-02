@@ -58,6 +58,8 @@ namespace sgt {
         bool operator!=(const Slice & another) const { return !operator==(another); }
 
         std::string_view ToStringView() const { return {data_, size_}; }
+
+        std::string ToString() const { return {data_, size_}; }
     };
 
     inline int SliceCmp(const Slice & a, const Slice & b) {

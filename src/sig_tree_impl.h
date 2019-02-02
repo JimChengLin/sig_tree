@@ -150,7 +150,7 @@ namespace sgt {
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     std::tuple<size_t, bool, size_t>
     SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
-    FindBestMatch(const Node * node, const Slice & k) const {
+    FindBestMatch(const Node * node, const Slice & k) {
         size_t size = NodeSize(node);
         if (SGT_UNLIKELY(size <= 1)) {
             return {0, false, size};
@@ -467,8 +467,6 @@ namespace sgt {
                     cend = min_it + 1;
                     size_t item_num = cend - cbegin;
                     if (item_num + node_size <= node->reps_.size()) {
-                        size_t nth = cbegin - child->diffs_.cbegin();
-
                         add_gaps(node->diffs_, i, node_size - 1, item_num);
                         add_gaps(node->reps_, i, node_size, item_num);
 

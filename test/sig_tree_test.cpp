@@ -164,9 +164,9 @@ namespace sgt {
                 assert(it == set.crend());
             }
             {
-                auto v = dist(engine);
-                auto it = set.lower_bound(v);
-                Slice s(reinterpret_cast<char *>(&v), sizeof(v));
+                auto val = dist(engine);
+                auto it = set.lower_bound(val);
+                Slice s(reinterpret_cast<char *>(&val), sizeof(val));
                 tree.Visit<tree.kForward>(s, [&it](const uint64_t & rep) {
                     uint32_t v = *it++;
                     assert(v == (rep >> 32));
@@ -188,6 +188,36 @@ namespace sgt {
             }
             assert(allocator.records_.size() == 1);
             assert(tree.Size() == 0);
+
+            {
+                for (uint32_t v:set) {
+                    Slice s(reinterpret_cast<char *>(&v), sizeof(v));
+                    tree.Add(s, s);
+                }
+
+                decltype(set) expect;
+                auto it = set.cbegin();
+                tree.VisitDel<tree.kForward>("", [&](const uint64_t & rep) -> std::pair<bool, bool> {
+                    uint32_t v = *it++;
+                    assert(v == (rep >> 32));
+
+                    if (std::bernoulli_distribution()(engine)) {
+                        return {true, true};
+                    } else {
+                        expect.emplace(v);
+                        return {true, false};
+                    }
+                });
+                assert(it == set.cend());
+
+                it = expect.cbegin();
+                tree.Visit<tree.kForward>("", [&it](const uint64_t & rep) {
+                    uint32_t v = *it++;
+                    assert(v == (rep >> 32));
+                    return true;
+                });
+                assert(it == expect.cend());
+            }
         };
     }
 }

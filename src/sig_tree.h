@@ -71,9 +71,19 @@ namespace sgt {
 
         size_t Size() const;
 
+        size_t RootOffset() const { return kRootOffset; }
+
         // bool(* visitor)(const KV_REP & rep)
         template<bool BACKWARD, typename VISITOR>
-        void Visit(const Slice & target, VISITOR && visitor) const;
+        void Visit(const Slice & target, VISITOR && visitor) const {
+            VisitGenericImpl<const SignatureTreeTpl *, BACKWARD>(this, target, std::forward<VISITOR>(visitor));
+        }
+
+        // std::pair<bool, bool>(* visitor)(const KV_REP & rep)
+        template<bool BACKWARD, typename VISITOR>
+        void VisitDel(const Slice & target, VISITOR && visitor) {
+            VisitGenericImpl<SignatureTreeTpl *, BACKWARD>(this, target, std::forward<VISITOR>(visitor));
+        }
 
         // bool(* if_dup_callback)(KV_TRANS & trans, KV_REP & rep)
         template<typename IF_DUP_CALLBACK  = std::false_type>
@@ -83,6 +93,8 @@ namespace sgt {
         bool Del(const Slice & k);
 
         void Compact();
+
+        void Rebuild(SignatureTreeTpl * dst);
 
     private:
         enum {
@@ -175,8 +187,8 @@ namespace sgt {
             return reinterpret_cast<Node *>(reinterpret_cast<char *>(allocator_->Base()) + offset);
         }
 
-        std::tuple<size_t /* idx */, bool /* direct */, size_t /* size */>
-        FindBestMatch(const Node * node, const Slice & k) const;
+        static std::tuple<size_t /* idx */, bool /* direct */, size_t /* size */>
+        FindBestMatch(const Node * node, const Slice & k);
 
         bool CombatInsert(const Slice & opponent, const Slice & k, const Slice & v,
                           Node * hint, size_t hint_idx, bool hint_direct);
@@ -207,6 +219,9 @@ namespace sgt {
         UnpackDiffAtAndShift(K_DIFF packed_diff) {
             return {packed_diff >> 3, (~packed_diff) & 0b111};
         }
+
+        template<typename T, bool BACKWARD, typename VISITOR>
+        static void VisitGenericImpl(T self, const Slice & target, VISITOR && visitor);
 
     public:
         enum {

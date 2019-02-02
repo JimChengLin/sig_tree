@@ -8,34 +8,34 @@
 
 namespace sgt {
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
-    template<bool BACKWARD, typename VISITOR>
+    template<typename T, bool BACKWARD, typename VISITOR>
     void SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
-    Visit(const Slice & target, VISITOR && visitor) const {
-        const Node * cursor = OffsetToMemNode(kRootOffset);
+    VisitGenericImpl(T self, const Slice & target, VISITOR && visitor) {
+        Node * cursor = self->OffsetToMemNode(self->kRootOffset);
         if (SGT_UNLIKELY(NodeSize(cursor) == 0)) {
             return;
         }
-        rocksdb::autovector<std::pair<const Node *, size_t /* rep_idx */>, 16> que;
+        rocksdb::autovector<std::pair<Node *, size_t /* rep_idx */>, 16> que;
 
-        auto leftmost = [this, &que](const Node * cursor) {
+        auto leftmost = [self, &que](Node * cursor) {
             while (true) {
                 que.emplace_back(cursor, 0);
                 const auto & rep = cursor->reps_[0];
-                if (helper_->IsPacked(rep)) {
-                    cursor = OffsetToMemNode(helper_->Unpack(rep));
+                if (self->helper_->IsPacked(rep)) {
+                    cursor = self->OffsetToMemNode(self->helper_->Unpack(rep));
                 } else {
                     break;
                 }
             }
         };
 
-        auto next = [this, &que, &leftmost]() {
+        auto next = [self, &que, &leftmost]() {
             do {
                 auto & p = que.back();
-                if (++p.second != NodeSize(p.first)) {
+                if (++p.second < NodeSize(p.first)) {
                     const auto & rep = p.first->reps_[p.second];
-                    if (helper_->IsPacked(rep)) {
-                        leftmost(OffsetToMemNode(helper_->Unpack(rep)));
+                    if (self->helper_->IsPacked(rep)) {
+                        leftmost(self->OffsetToMemNode(self->helper_->Unpack(rep)));
                     }
                     break;
                 }
@@ -43,27 +43,27 @@ namespace sgt {
             } while (!que.empty());
         };
 
-        auto rightmost = [this, &que](const Node * cursor) {
+        auto rightmost = [self, &que](Node * cursor) {
             while (true) {
                 size_t rep_idx = NodeSize(cursor) - 1;
                 que.emplace_back(cursor, rep_idx);
                 const auto & rep = cursor->reps_[rep_idx];
-                if (helper_->IsPacked(rep)) {
-                    cursor = OffsetToMemNode(helper_->Unpack(rep));
+                if (self->helper_->IsPacked(rep)) {
+                    cursor = self->OffsetToMemNode(self->helper_->Unpack(rep));
                 } else {
                     break;
                 }
             }
         };
 
-        auto prev = [this, &que, &rightmost]() {
+        auto prev = [self, &que, &rightmost]() {
             do {
                 auto & p = que.back();
                 if (p.second != 0) {
                     --p.second;
                     const auto & rep = p.first->reps_[p.second];
-                    if (helper_->IsPacked(rep)) {
-                        rightmost(OffsetToMemNode(helper_->Unpack(rep)));
+                    if (self->helper_->IsPacked(rep)) {
+                        rightmost(self->OffsetToMemNode(self->helper_->Unpack(rep)));
                     }
                     break;
                 }
@@ -87,16 +87,16 @@ namespace sgt {
                 que.emplace_back(cursor, rep_idx);
 
                 const auto & rep = cursor->reps_[rep_idx];
-                if (helper_->IsPacked(rep)) {
-                    cursor = OffsetToMemNode(helper_->Unpack(rep));
+                if (self->helper_->IsPacked(rep)) {
+                    cursor = self->OffsetToMemNode(self->helper_->Unpack(rep));
                 } else {
-                    const auto & trans = helper_->Trans(rep);
+                    const auto & trans = self->helper_->Trans(rep);
                     if (trans == target) {
                     } else { // Reseek
                         que.pop_back();
 
-                        [this, &que, &next, &prev](const Slice & opponent, const Slice & k,
-                                                   const Node * hint, size_t hint_idx, bool hint_direct) {
+                        [self, &que, &next](const Slice & opponent, const Slice & k,
+                                            Node * hint, size_t hint_idx, bool hint_direct) {
                             K_DIFF diff_at = 0;
                             while (opponent[diff_at] == k[diff_at]) {
                                 ++diff_at;
@@ -110,7 +110,7 @@ namespace sgt {
                             auto direct = static_cast<bool>((1 + (CharToUint8(k[diff_at]) | mask)) >> 8);
 
                             K_DIFF packed_diff = PackDiffAtAndShift(diff_at, shift);
-                            const Node * cursor = hint;
+                            Node * cursor = hint;
                             restart:
                             while (true) {
                                 size_t insert_idx;
@@ -136,7 +136,7 @@ namespace sgt {
                                         if (exist_diff > packed_diff) {
                                             if (hint != nullptr) {
                                                 hint = nullptr;
-                                                cursor = OffsetToMemNode(kRootOffset);
+                                                cursor = self->OffsetToMemNode(self->kRootOffset);
                                                 que.clear();
                                                 goto restart;
                                             }
@@ -185,13 +185,13 @@ namespace sgt {
                                 que.emplace_back(cursor, rep_idx);
 
                                 const auto & rep = cursor->reps_[rep_idx];
-                                if (cursor->diffs_[insert_idx] > packed_diff || !helper_->IsPacked(rep)) {
+                                if (cursor->diffs_[insert_idx] > packed_diff || !self->helper_->IsPacked(rep)) {
                                     if (direct) {
                                         next();
                                     }
                                     break;
                                 }
-                                cursor = OffsetToMemNode(helper_->Unpack(rep));
+                                cursor = self->OffsetToMemNode(self->helper_->Unpack(rep));
                             }
                         }(trans.Key(), target, cursor, idx, direct);
 
@@ -201,16 +201,78 @@ namespace sgt {
             }
         }
 
-        while (!que.empty()) {
-            const auto & p = que.back();
-            if (visitor(p.first->reps_[p.second])) {
-                if constexpr (!BACKWARD) {
-                    next();
+        if constexpr (std::is_same<T, const SignatureTreeTpl *>::value) {
+            while (!que.empty()) {
+                const auto & p = que.back();
+                if (visitor(p.first->reps_[p.second])) {
+                    if constexpr (!BACKWARD) {
+                        next();
+                    } else {
+                        prev();
+                    }
                 } else {
-                    prev();
+                    break;
                 }
-            } else {
-                break;
+            }
+        } else { // del
+            while (!que.empty()) {
+                auto it = que.end();
+                Node * node;
+                size_t rep_idx;
+                std::tie(node, rep_idx) = *(--it);
+
+                bool proceed;
+                bool del;
+                std::tie(proceed, del) = visitor(node->reps_[rep_idx]);
+
+                if (proceed) {
+                    if (del) {
+                        Node * parent = nullptr;
+                        size_t parent_rep_idx;
+                        size_t parent_size;
+                        if (it != que.begin()) {
+                            std::tie(parent, parent_rep_idx) = *(--it);
+                            parent_size = NodeSize(parent);
+                        }
+
+                        size_t size = NodeSize(node);
+                        bool direct = !(rep_idx == 0 || (rep_idx != size - 1
+                                                         && node->diffs_[rep_idx - 1] < node->diffs_[rep_idx]));
+
+                        NodeRemove(node, rep_idx - direct, direct, size);
+                        if (parent != nullptr && parent->reps_.size() - parent_size + 1 >= --size) {
+                            self->NodeMerge(parent, parent_rep_idx, false, parent_size,
+                                            node, size);
+                            it->second += rep_idx;
+                            que.pop_back();
+                        } else if (const auto & r = node->reps_[0];
+                                NodeSize(node) == 1 && self->helper_->IsPacked(r)) {
+                            Node * child = self->OffsetToMemNode(self->helper_->Unpack(r));
+                            self->NodeMerge(node, 0, false, 1,
+                                            child, NodeSize(child));
+                            que.pop_back();
+                        }
+
+                        if constexpr (!BACKWARD) {
+                            std::tie(node, rep_idx) = que.back();
+                            if (rep_idx < NodeSize(node)) {
+                                const auto & rep = node->reps_[rep_idx];
+                                if (self->helper_->IsPacked(rep)) {
+                                    leftmost(self->OffsetToMemNode(self->helper_->Unpack(rep)));
+                                }
+                                continue;
+                            }
+                        }
+                    }
+
+                    if constexpr (!BACKWARD) {
+                        next();
+                    } else {
+                        prev();
+                    }
+                } else {
+                    break;
+                }
             }
         }
     }
