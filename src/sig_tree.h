@@ -94,7 +94,7 @@ namespace sgt {
 
         void Compact();
 
-        void Rebuild(SignatureTreeTpl * dst);
+        void Rebuild(SignatureTreeTpl * dst) const;
 
     private:
         enum {
@@ -182,6 +182,11 @@ namespace sgt {
         static_assert(std::is_standard_layout<Node>::value &&
                       std::is_trivially_copyable<Node>::value);
 
+        struct Page {
+            std::vector<K_DIFF> diffs;
+            std::vector<KV_REP> reps;
+        };
+
     private:
         Node * OffsetToMemNode(size_t offset) const {
             return reinterpret_cast<Node *>(reinterpret_cast<char *>(allocator_->Base()) + offset);
@@ -199,6 +204,18 @@ namespace sgt {
                        Node * child, size_t child_size);
 
         void NodeCompact(Node * node);
+
+        Page RebuildHeadNode(const Node * node, SignatureTreeTpl * dst) const;
+
+        Page RebuildInternalNode(const Node * node,
+                                 const K_DIFF * cbegin, const K_DIFF * cend, const K_DIFF * min_it,
+                                 typename Node::Pyramid & pyramid, bool direct, SignatureTreeTpl * dst) const;
+
+        static Page RebuildLRPagesToTree(Page && l, Page && r, K_DIFF diff, SignatureTreeTpl * dst);
+
+        static size_t RebuildPageToTree(const Page & page, SignatureTreeTpl * dst);
+
+        static void RebuildPageToNode(const Page & page, Node * node);
 
         static void NodeInsert(Node * node, size_t insert_idx, bool insert_direct,
                                bool direct, K_DIFF diff, const KV_REP & rep, size_t size);

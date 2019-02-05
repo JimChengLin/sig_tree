@@ -6,6 +6,7 @@
 #include "../src/sig_tree.h"
 #include "../src/sig_tree_impl.h"
 #include "../src/sig_tree_node_impl.h"
+#include "../src/sig_tree_rebuild.h"
 #include "../src/sig_tree_visit_impl.h"
 
 namespace sgt {
@@ -189,13 +190,13 @@ namespace sgt {
             assert(allocator.records_.size() == 1);
             assert(tree.Size() == 0);
 
+            decltype(set) expect;
             {
                 for (uint32_t v:set) {
                     Slice s(reinterpret_cast<char *>(&v), sizeof(v));
                     tree.Add(s, s);
                 }
 
-                decltype(set) expect;
                 auto it = set.cbegin();
                 tree.VisitDel<tree.kForward>("", [&](const uint64_t & rep) -> std::pair<bool, bool> {
                     uint32_t v = *it++;
@@ -212,6 +213,20 @@ namespace sgt {
 
                 it = expect.cbegin();
                 tree.Visit<tree.kForward>("", [&it](const uint64_t & rep) {
+                    uint32_t v = *it++;
+                    assert(v == (rep >> 32));
+                    return true;
+                });
+                assert(it == expect.cend());
+            }
+            {
+                Helper dst_helper;
+                AllocatorImpl dst_allocator;
+                SignatureTreeTpl<KVTrans> dst(&dst_helper, &dst_allocator);
+                tree.Rebuild(&dst);
+
+                auto it = expect.cbegin();
+                dst.Visit<tree.kForward>("", [&it](const uint64_t & rep) {
                     uint32_t v = *it++;
                     assert(v == (rep >> 32));
                     return true;
