@@ -6,7 +6,7 @@
 #include "../src/sig_tree.h"
 #include "../src/sig_tree_impl.h"
 #include "../src/sig_tree_node_impl.h"
-#include "../src/sig_tree_rebuild.h"
+#include "../src/sig_tree_rebuild_impl.h"
 #include "../src/sig_tree_visit_impl.h"
 
 namespace sgt {
