@@ -150,8 +150,7 @@ namespace sgt {
                 auto it = set.cbegin();
                 tree.Visit<tree.kForward>("", [&it](const uint64_t & rep) {
                     uint32_t v = *it++;
-                    assert(v == (rep >> 32));
-                    return true;
+                    return v == (rep >> 32);
                 });
                 assert(it == set.cend());
             }
@@ -159,8 +158,7 @@ namespace sgt {
                 auto it = set.crbegin();
                 tree.Visit<tree.kBackward>("", [&it](const uint64_t & rep) {
                     uint32_t v = *it++;
-                    assert(v == (rep >> 32));
-                    return true;
+                    return v == (rep >> 32);
                 });
                 assert(it == set.crend());
             }
@@ -170,8 +168,7 @@ namespace sgt {
                 Slice s(reinterpret_cast<char *>(&val), sizeof(val));
                 tree.Visit<tree.kForward>(s, [&it](const uint64_t & rep) {
                     uint32_t v = *it++;
-                    assert(v == (rep >> 32));
-                    return true;
+                    return v == (rep >> 32);
                 });
                 assert(it == set.cend());
             }
@@ -200,13 +197,13 @@ namespace sgt {
                 auto it = set.cbegin();
                 tree.VisitDel<tree.kForward>("", [&](const uint64_t & rep) -> std::pair<bool, bool> {
                     uint32_t v = *it++;
-                    assert(v == (rep >> 32));
+                    bool proceed = (v == (rep >> 32));
 
                     if (std::bernoulli_distribution()(engine)) {
-                        return {true, true};
+                        return {proceed, true};
                     } else {
                         expect.emplace(v);
-                        return {true, false};
+                        return {proceed, false};
                     }
                 });
                 assert(it == set.cend());
@@ -214,8 +211,7 @@ namespace sgt {
                 it = expect.cbegin();
                 tree.Visit<tree.kForward>("", [&it](const uint64_t & rep) {
                     uint32_t v = *it++;
-                    assert(v == (rep >> 32));
-                    return true;
+                    return v == (rep >> 32);
                 });
                 assert(it == expect.cend());
             }
@@ -228,8 +224,7 @@ namespace sgt {
                 auto it = expect.cbegin();
                 dst.Visit<tree.kForward>("", [&it](const uint64_t & rep) {
                     uint32_t v = *it++;
-                    assert(v == (rep >> 32));
-                    return true;
+                    return v == (rep >> 32);
                 });
                 assert(it == expect.cend());
             }
