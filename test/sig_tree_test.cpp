@@ -63,8 +63,7 @@ namespace sgt {
                 return (static_cast<uint64_t>(vi) << 32) | ki;
             }
 
-            void Del(KVTrans & trans) override {
-            }
+            void Del(KVTrans & trans) override {}
 
             uint64_t Pack(size_t offset) const override {
                 assert(offset % 2 == 0);
@@ -112,8 +111,7 @@ namespace sgt {
                 records_.erase(it);
             }
 
-            void Grow() override {
-            }
+            void Grow() override {}
         };
 
         void Run() {

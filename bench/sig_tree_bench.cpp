@@ -68,8 +68,7 @@ namespace sgt {
             }
 
             // 释放资源, 由于 KV 的所有权在外部, 这里不需要任何操作
-            void Del(KVTrans & trans) override {
-            }
+            void Del(KVTrans & trans) override {}
 
             // Allocator.AllocatePage() 后获得的 offset 必须要能够打包进 Token
             // 言下之意就是 Token(默认类型 uint64_t) 的空间内必须能自省表达两种数据
@@ -142,8 +141,7 @@ namespace sgt {
             }
 
             // 扩容
-            void Grow() override {
-            }
+            void Grow() override {}
         };
 
         // --- 实现接口 - 结束

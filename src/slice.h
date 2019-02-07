@@ -37,7 +37,7 @@ namespace sgt {
         Slice(T s) : data_(s), size_(strlen(s)) {}
 
         template<size_t L>
-        explicit Slice(const char (& s)[L]) : data_(s), size_(L - 1) {}
+        Slice(const char (& s)[L]) : data_(s), size_(L - 1) {}
 
     public:
         // same as STL
