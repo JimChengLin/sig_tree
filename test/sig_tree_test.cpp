@@ -132,7 +132,7 @@ namespace sgt {
             std::cout << "sig_tree_test_seed: " << seed << std::endl;
 
             std::default_random_engine engine(seed);
-            auto dist = std::uniform_int_distribution<uint32_t>(0, UINT32_MAX >> 1);
+            std::uniform_int_distribution<uint32_t> dist(0, UINT32_MAX >> 1);
             for (size_t i = 0; i < kTestTimes; ++i) {
                 auto v = dist(engine);
                 v += (v % 2 == 0);

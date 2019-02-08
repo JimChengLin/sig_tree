@@ -149,19 +149,19 @@ namespace sgt {
 #define TIME_START auto start = std::chrono::high_resolution_clock::now()
 #define TIME_END auto end = std::chrono::high_resolution_clock::now()
 #define PRINT_TIME(name) \
-std::cout << #name " took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " milliseconds" << std::endl
+std::cout << name " took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " milliseconds" << std::endl
 
         void Run() {
             auto seed = std::random_device()();
             std::default_random_engine engine(seed);
+            std::uniform_int_distribution<uint8_t> dist(1);
 
             // 随机生成 100W 16Bytes C 式字符串
             std::vector<uint8_t *> src(1000000);
             for (auto & s:src) {
                 s = static_cast<uint8_t *>(malloc(16));
                 for (size_t i = 0; i < 15; ++i) {
-                    auto v = std::uniform_int_distribution<uint8_t>(1)(engine);
-                    s[i] = v;
+                    s[i] = dist(engine);
                 }
                 s[15] = 0;
             }
@@ -187,7 +187,7 @@ std::cout << #name " took " << std::chrono::duration_cast<std::chrono::milliseco
                     tree.Add(reinterpret_cast<char *>(s), {});
                 }
                 TIME_END;
-                PRINT_TIME(SGT - Add);
+                PRINT_TIME("SGT - Add");
             }
             {
                 TIME_START;
@@ -195,14 +195,14 @@ std::cout << #name " took " << std::chrono::duration_cast<std::chrono::milliseco
                     set.emplace(reinterpret_cast<char *>(s));
                 }
                 TIME_END;
-                PRINT_TIME(std::set - emplace);
+                PRINT_TIME("std::set - emplace");
             }
             // Add - 结束
             {
                 TIME_START;
                 tree.Compact();
                 TIME_END;
-                PRINT_TIME(SGT - Compact);
+                PRINT_TIME("SGT - Compact");
             }
             // Get - 开始
             {
@@ -211,7 +211,7 @@ std::cout << #name " took " << std::chrono::duration_cast<std::chrono::milliseco
                     tree.Get(reinterpret_cast<char *>(s), nullptr);
                 }
                 TIME_END;
-                PRINT_TIME(SGT - Get);
+                PRINT_TIME("SGT - Get");
             }
             {
                 TIME_START;
@@ -219,7 +219,7 @@ std::cout << #name " took " << std::chrono::duration_cast<std::chrono::milliseco
                     set.find(reinterpret_cast<char *>(s));
                 }
                 TIME_END;
-                PRINT_TIME(std::set - find);
+                PRINT_TIME("std::set - find");
             }
             // Get - 结束
 

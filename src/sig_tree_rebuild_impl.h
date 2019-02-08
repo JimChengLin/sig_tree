@@ -1,6 +1,6 @@
 #pragma once
-#ifndef SIG_TREE_SIG_TREE_REBUILD_H
-#define SIG_TREE_SIG_TREE_REBUILD_H
+#ifndef SIG_TREE_SIG_TREE_REBUILD_IMPL_H
+#define SIG_TREE_SIG_TREE_REBUILD_IMPL_H
 
 #include "sig_tree.h"
 
@@ -112,4 +112,4 @@ namespace sgt {
     }
 }
 
-#endif //SIG_TREE_SIG_TREE_REBUILD_H
+#endif //SIG_TREE_SIG_TREE_REBUILD_IMPL_H

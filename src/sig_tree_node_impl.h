@@ -132,8 +132,9 @@ namespace sgt {
             return SmartMinElem8(from, to) - cbegin;
         }
 
+        bool accumulator = true;
         size_t level = 0;
-        while (end_pos - pos > 1) {
+        do {
             const size_t q = pos / 8;
             const size_t r = pos % 8;
             pos = q;
@@ -141,7 +142,7 @@ namespace sgt {
 
             const size_t offset = kAbsOffsets[level++];
             uint8_t & upper_idx = idxes_[offset + pos];
-            if (upper_idx > r) {
+            if ((accumulator = (upper_idx + accumulator > r))) {
                 cbegin = vals_.cbegin() + offset;
                 from = cbegin + pos;
                 to = cbegin + end_pos;
@@ -156,7 +157,7 @@ namespace sgt {
                 *const_cast<K_DIFF *>(from) = *min_elem;
                 upper_idx = static_cast<uint8_t>(idx);
             }
-        }
+        } while (end_pos - pos > 1);
         return CalcOffset(level - 1, pos);
     }
 
@@ -171,8 +172,9 @@ namespace sgt {
             return SmartMinElem8(from, to) - cbegin;
         }
 
+        bool accumulator = true;
         size_t level = 0;
-        while (end_pos - pos > 1) {
+        do {
             size_t q = end_pos / 8;
             size_t r = end_pos % 8;
             if (r == 0) {
@@ -184,7 +186,7 @@ namespace sgt {
 
             const size_t offset = kAbsOffsets[level++];
             uint8_t & upper_idx = idxes_[offset + q /* end_pos - 1 */];
-            if (upper_idx < r - 1) {
+            if ((accumulator = (upper_idx < r - 1 + accumulator))) {
                 cbegin = vals_.cbegin() + offset;
                 from = cbegin + pos;
                 to = cbegin + end_pos;
@@ -200,7 +202,7 @@ namespace sgt {
                 *const_cast<K_DIFF *>(to - 1) = *min_elem;
                 upper_idx = static_cast<uint8_t>(idx);
             }
-        }
+        } while (end_pos - pos > 1);
         return CalcOffset(level - 1, pos);
     }
 
