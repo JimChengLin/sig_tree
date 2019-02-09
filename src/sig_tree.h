@@ -14,6 +14,8 @@
 
 #include <array>
 #include <climits>
+#include <tuple>
+#include <vector>
 
 #include "allocator.h"
 #include "kv_trans_trait.h"

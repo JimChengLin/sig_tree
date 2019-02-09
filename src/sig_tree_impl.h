@@ -2,6 +2,8 @@
 #ifndef SIG_TREE_SIG_TREE_IMPL_H
 #define SIG_TREE_SIG_TREE_IMPL_H
 
+#include <algorithm>
+
 #include "coding.h"
 #include "likely.h"
 #include "sig_tree.h"
