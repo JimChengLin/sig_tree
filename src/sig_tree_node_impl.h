@@ -113,23 +113,33 @@ namespace sgt {
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     template<size_t RANK>
     size_t SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
-    NodeTpl<RANK>::Pyramid::MinAt(const K_DIFF * from, const K_DIFF * to) const {
+    NodeTpl<RANK>::Pyramid::MinAt(const K_DIFF * from, const K_DIFF * to,
+                                  K_DIFF * min_val) const {
         size_t size = to - from;
         if (size <= 8) {
-            return SmartMinElem8(from, to) - from;
+            const K_DIFF * min_it = SmartMinElem8(from, to);
+            if (min_val != nullptr) {
+                *min_val = *min_it;
+            }
+            return min_it - from;
         }
-        return CalcOffset(PyramidHeight(size) - 1, 0);
+        return CalcOffset(PyramidHeight(size) - 1, 0, min_val);
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     template<size_t RANK>
     size_t SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
-    NodeTpl<RANK>::Pyramid::TrimLeft(const K_DIFF * cbegin, const K_DIFF * from, const K_DIFF * to) {
+    NodeTpl<RANK>::Pyramid::TrimLeft(const K_DIFF * cbegin, const K_DIFF * from, const K_DIFF * to,
+                                     K_DIFF * min_val) {
         size_t pos = from - cbegin;
         size_t end_pos = to - cbegin;
         assert(end_pos >= pos + 1);
         if (end_pos - pos <= 8) {
-            return SmartMinElem8(from, to) - cbegin;
+            const K_DIFF * min_it = SmartMinElem8(from, to);
+            if (min_val != nullptr) {
+                *min_val = *min_it;
+            }
+            return min_it - cbegin;
         }
 
         bool accumulator = true;
@@ -158,18 +168,23 @@ namespace sgt {
                 upper_idx = static_cast<uint8_t>(idx);
             }
         } while (end_pos - pos > 1);
-        return CalcOffset(level - 1, pos);
+        return CalcOffset(level - 1, pos, min_val);
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     template<size_t RANK>
     size_t SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
-    NodeTpl<RANK>::Pyramid::TrimRight(const K_DIFF * cbegin, const K_DIFF * from, const K_DIFF * to) {
+    NodeTpl<RANK>::Pyramid::TrimRight(const K_DIFF * cbegin, const K_DIFF * from, const K_DIFF * to,
+                                      K_DIFF * min_val) {
         size_t pos = from - cbegin;
         size_t end_pos = to - cbegin;
         assert(end_pos >= pos + 1);
         if (end_pos - pos <= 8) {
-            return SmartMinElem8(from, to) - cbegin;
+            const K_DIFF * min_it = SmartMinElem8(from, to);
+            if (min_val != nullptr) {
+                *min_val = *min_it;
+            }
+            return min_it - cbegin;
         }
 
         bool accumulator = true;
@@ -203,14 +218,19 @@ namespace sgt {
                 upper_idx = static_cast<uint8_t>(idx);
             }
         } while (end_pos - pos > 1);
-        return CalcOffset(level - 1, pos);
+        return CalcOffset(level - 1, pos, min_val);
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     template<size_t RANK>
     size_t SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
-    NodeTpl<RANK>::Pyramid::CalcOffset(size_t level, size_t index) const {
-        size_t r = idxes_[kAbsOffsets[level] + index];
+    NodeTpl<RANK>::Pyramid::CalcOffset(size_t level, size_t index, K_DIFF * min_val) const {
+        size_t i = kAbsOffsets[level] + index;
+        if (min_val != nullptr) {
+            *min_val = vals_[i];
+        }
+
+        size_t r = idxes_[i];
         do {
             index = index * 8 + r;
             r = idxes_[kAbsOffsets[--level] + index];

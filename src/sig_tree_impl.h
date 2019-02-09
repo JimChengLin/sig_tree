@@ -125,12 +125,12 @@ namespace sgt {
                 auto && trans = helper_->Trans(rep);
                 if (trans == k) {
                     helper_->Del(trans);
-                    NodeRemove(cursor, idx, direct, size);
-                    if (parent != nullptr && parent->reps_.size() - parent_size + 1 >= --size) {
+                    NodeRemove(cursor, idx, direct, size--);
+                    if (parent != nullptr && parent->reps_.size() - parent_size + 1 >= size) {
                         NodeMerge(parent, parent_idx, parent_direct, parent_size,
                                   cursor, size);
                     } else if (const auto & r = cursor->reps_[0];
-                            NodeSize(cursor) == 1 && helper_->IsPacked(r)) {
+                            size == 1 && helper_->IsPacked(r)) {
                         Node * child = OffsetToMemNode(helper_->Unpack(r));
                         NodeMerge(cursor, 0, false, 1,
                                   child, NodeSize(child));
@@ -161,13 +161,14 @@ namespace sgt {
         const K_DIFF * cbegin = node->diffs_.cbegin();
         const K_DIFF * cend = &node->diffs_[size - 1];
 
+        K_DIFF min_val;
         auto pyramid = node->pyramid_;
-        const K_DIFF * min_it = cbegin + pyramid.MinAt(cbegin, cend);
+        const K_DIFF * min_it = cbegin + pyramid.MinAt(cbegin, cend, &min_val);
         while (true) {
-            assert(min_it == std::min_element(cbegin, cend));
+            assert(min_it == std::min_element(cbegin, cend) && *min_it == min_val);
             K_DIFF diff_at;
             uint8_t shift;
-            std::tie(diff_at, shift) = UnpackDiffAtAndShift(*min_it);
+            std::tie(diff_at, shift) = UnpackDiffAtAndShift(min_val);
             uint8_t mask = ~(static_cast<uint8_t>(1) << shift);
 
             // left or right?
@@ -180,13 +181,13 @@ namespace sgt {
                 if (cbegin == cend) {
                     return {min_it - node->diffs_.cbegin(), direct, size};
                 }
-                min_it = node->diffs_.cbegin() + pyramid.TrimRight(node->diffs_.cbegin(), cbegin, cend);
+                min_it = node->diffs_.cbegin() + pyramid.TrimRight(node->diffs_.cbegin(), cbegin, cend, &min_val);
             } else { // go right
                 cbegin = min_it + 1;
                 if (cbegin == cend) {
                     return {min_it - node->diffs_.cbegin(), direct, size};
                 }
-                min_it = node->diffs_.cbegin() + pyramid.TrimLeft(node->diffs_.cbegin(), cbegin, cend);
+                min_it = node->diffs_.cbegin() + pyramid.TrimLeft(node->diffs_.cbegin(), cbegin, cend, &min_val);
             }
         }
     }
@@ -226,11 +227,11 @@ namespace sgt {
                 const K_DIFF * cbegin = cursor->diffs_.cbegin();
                 const K_DIFF * cend = &cursor->diffs_[cursor_size - 1];
 
+                K_DIFF exist_diff;
                 auto pyramid = cursor->pyramid_;
-                const K_DIFF * min_it = cbegin + pyramid.MinAt(cbegin, cend);
+                const K_DIFF * min_it = cbegin + pyramid.MinAt(cbegin, cend, &exist_diff);
                 while (true) {
-                    assert(min_it == std::min_element(cbegin, cend));
-                    K_DIFF exist_diff = *min_it;
+                    assert(min_it == std::min_element(cbegin, cend) && *min_it == exist_diff);
                     if (exist_diff > packed_diff) {
                         if (hint != nullptr) {
                             hint = nullptr;
@@ -264,7 +265,7 @@ namespace sgt {
                             break;
                         }
                         min_it = cursor->diffs_.cbegin() +
-                                 pyramid.TrimRight(cursor->diffs_.cbegin(), cbegin, cend);
+                                 pyramid.TrimRight(cursor->diffs_.cbegin(), cbegin, cend, &exist_diff);
                     } else {
                         cbegin = min_it + 1;
                         if (cbegin == cend) {
@@ -273,7 +274,7 @@ namespace sgt {
                             break;
                         }
                         min_it = cursor->diffs_.cbegin() +
-                                 pyramid.TrimLeft(cursor->diffs_.cbegin(), cbegin, cend);
+                                 pyramid.TrimLeft(cursor->diffs_.cbegin(), cbegin, cend, &exist_diff);
                     }
                 }
             }

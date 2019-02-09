@@ -147,13 +147,16 @@ namespace sgt {
 
                 void Build(const K_DIFF * from, const K_DIFF * to, size_t rebuild_idx);
 
-                size_t MinAt(const K_DIFF * from, const K_DIFF * to) const;
+                size_t MinAt(const K_DIFF * from, const K_DIFF * to,
+                             K_DIFF * min_val = nullptr) const;
 
-                size_t TrimLeft(const K_DIFF * cbegin, const K_DIFF * from, const K_DIFF * to);
+                size_t TrimLeft(const K_DIFF * cbegin, const K_DIFF * from, const K_DIFF * to,
+                                K_DIFF * min_val = nullptr);
 
-                size_t TrimRight(const K_DIFF * cbegin, const K_DIFF * from, const K_DIFF * to);
+                size_t TrimRight(const K_DIFF * cbegin, const K_DIFF * from, const K_DIFF * to,
+                                 K_DIFF * min_val = nullptr);
 
-                size_t CalcOffset(size_t level, size_t index) const;
+                size_t CalcOffset(size_t level, size_t index, K_DIFF * min_val) const;
             };
 
             std::array<KV_REP, RANK + 1> reps_;

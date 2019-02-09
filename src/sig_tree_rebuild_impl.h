@@ -25,12 +25,13 @@ namespace sgt {
         const K_DIFF * cbegin = node->diffs_.cbegin();
         const K_DIFF * cend = &node->diffs_[size - 1];
 
+        K_DIFF min_val;
         auto pyramid = node->pyramid_;
-        const K_DIFF * min_it = cbegin + pyramid.MinAt(cbegin, cend);
+        const K_DIFF * min_it = cbegin + pyramid.MinAt(cbegin, cend, &min_val);
 
         Page l = RebuildInternalNode(node, cbegin, cend, min_it, pyramid, false, dst);
         Page r = RebuildInternalNode(node, cbegin, cend, min_it, pyramid, true, dst);
-        return RebuildLRPagesToTree(std::move(l), std::move(r), *min_it, dst);
+        return RebuildLRPagesToTree(std::move(l), std::move(r), min_val, dst);
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
@@ -40,6 +41,7 @@ namespace sgt {
                         const K_DIFF * cbegin, const K_DIFF * cend, const K_DIFF * min_it,
                         typename Node::Pyramid & pyramid, bool direct, SignatureTreeTpl * dst) const {
         assert(min_it == std::min_element(cbegin, cend));
+        K_DIFF min_val;
         if (!direct) {  // go left
             cend = min_it;
             if (cbegin == cend) {
@@ -48,7 +50,7 @@ namespace sgt {
                                               : Page{{},
                                                      {{rep}}};
             }
-            min_it = node->diffs_.cbegin() + pyramid.TrimRight(node->diffs_.cbegin(), cbegin, cend);
+            min_it = node->diffs_.cbegin() + pyramid.TrimRight(node->diffs_.cbegin(), cbegin, cend, &min_val);
         } else {  // go right
             cbegin = min_it + 1;
             if (cbegin == cend) {
@@ -57,12 +59,12 @@ namespace sgt {
                                               : Page{{},
                                                      {{rep}}};
             }
-            min_it = node->diffs_.cbegin() + pyramid.TrimLeft(node->diffs_.cbegin(), cbegin, cend);
+            min_it = node->diffs_.cbegin() + pyramid.TrimLeft(node->diffs_.cbegin(), cbegin, cend, &min_val);
         }
 
         Page l = RebuildInternalNode(node, cbegin, cend, min_it, pyramid, false, dst);
         Page r = RebuildInternalNode(node, cbegin, cend, min_it, pyramid, true, dst);
-        return RebuildLRPagesToTree(std::move(l), std::move(r), *min_it, dst);
+        return RebuildLRPagesToTree(std::move(l), std::move(r), min_val, dst);
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>

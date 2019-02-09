@@ -128,11 +128,11 @@ namespace sgt {
                                     const K_DIFF * cbegin = cursor->diffs_.cbegin();
                                     const K_DIFF * cend = &cursor->diffs_[cursor_size - 1];
 
+                                    K_DIFF exist_diff;
                                     auto pyramid = cursor->pyramid_;
-                                    const K_DIFF * min_it = cbegin + pyramid.MinAt(cbegin, cend);
+                                    const K_DIFF * min_it = cbegin + pyramid.MinAt(cbegin, cend, &exist_diff);
                                     while (true) {
-                                        assert(min_it == std::min_element(cbegin, cend));
-                                        K_DIFF exist_diff = *min_it;
+                                        assert(min_it == std::min_element(cbegin, cend) && *min_it == exist_diff);
                                         if (exist_diff > packed_diff) {
                                             if (hint != nullptr) {
                                                 hint = nullptr;
@@ -167,7 +167,8 @@ namespace sgt {
                                                 break;
                                             }
                                             min_it = cursor->diffs_.cbegin() +
-                                                     pyramid.TrimRight(cursor->diffs_.cbegin(), cbegin, cend);
+                                                     pyramid.TrimRight(cursor->diffs_.cbegin(), cbegin, cend,
+                                                                       &exist_diff);
                                         } else {
                                             cbegin = min_it + 1;
                                             if (cbegin == cend) {
@@ -176,7 +177,8 @@ namespace sgt {
                                                 break;
                                             }
                                             min_it = cursor->diffs_.cbegin() +
-                                                     pyramid.TrimLeft(cursor->diffs_.cbegin(), cbegin, cend);
+                                                     pyramid.TrimLeft(cursor->diffs_.cbegin(), cbegin, cend,
+                                                                      &exist_diff);
                                         }
                                     }
                                 }
@@ -239,14 +241,14 @@ namespace sgt {
                         bool direct = !(rep_idx == 0 || (rep_idx != size - 1
                                                          && node->diffs_[rep_idx - 1] < node->diffs_[rep_idx]));
 
-                        NodeRemove(node, rep_idx - direct, direct, size);
-                        if (parent != nullptr && parent->reps_.size() - parent_size + 1 >= --size) {
+                        NodeRemove(node, rep_idx - direct, direct, size--);
+                        if (parent != nullptr && parent->reps_.size() - parent_size + 1 >= size) {
                             self->NodeMerge(parent, parent_rep_idx, false, parent_size,
                                             node, size);
                             it->second += rep_idx;
                             que.pop_back();
                         } else if (const auto & r = node->reps_[0];
-                                NodeSize(node) == 1 && self->helper_->IsPacked(r)) {
+                                size == 1 && self->helper_->IsPacked(r)) {
                             Node * child = self->OffsetToMemNode(self->helper_->Unpack(r));
                             self->NodeMerge(node, 0, false, 1,
                                             child, NodeSize(child));
