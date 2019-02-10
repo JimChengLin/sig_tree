@@ -71,6 +71,8 @@ namespace sgt {
     public:
         bool Get(const Slice & k, std::string * v) const;
 
+        bool GetRep(const Slice & k, KV_REP * rep) const;
+
         size_t Size() const;
 
         size_t RootOffset() const { return kRootOffset; }
@@ -81,7 +83,7 @@ namespace sgt {
             VisitGenericImpl<const SignatureTreeTpl *, BACKWARD>(this, target, std::forward<VISITOR>(visitor));
         }
 
-        // std::pair<bool, bool>(* visitor)(const KV_REP & rep)
+        // std::pair<bool, bool>(* visitor)(KV_REP & rep)
         template<bool BACKWARD, typename VISITOR>
         void VisitDel(const Slice & target, VISITOR && visitor) {
             VisitGenericImpl<SignatureTreeTpl *, BACKWARD>(this, target, std::forward<VISITOR>(visitor));

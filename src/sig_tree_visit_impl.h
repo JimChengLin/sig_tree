@@ -205,7 +205,7 @@ namespace sgt {
 
         if constexpr (std::is_same<T, const SignatureTreeTpl *>::value) {
             while (!que.empty()) {
-                const auto & p = que.back();
+                auto & p = que.back();
                 if (visitor(p.first->reps_[p.second])) {
                     if constexpr (!BACKWARD) {
                         next();

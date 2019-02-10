@@ -177,6 +177,10 @@ namespace sgt {
                 tree.Get(s, &out);
                 assert(s == out);
 
+                uint64_t rep;
+                tree.GetRep(s, &rep);
+                assert(v == (rep >> 32));
+
                 out.clear();
                 tree.Del(s);
                 tree.Get(s, &out);

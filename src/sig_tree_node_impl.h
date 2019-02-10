@@ -4,11 +4,13 @@
 
 #if __has_include(<smmintrin.h>)
 #include <smmintrin.h>
-#ifndef HAS_MINPOS
-#define HAS_MINPOS true
-#endif
+namespace sgt {
+    constexpr bool kHasMinpos = true;
+}
 #else
-#define HAS_MINPOS false
+namespace sgt {
+    constexpr bool kHasMinpos = false;
+}
 #endif
 
 #include "sig_tree.h"
@@ -55,7 +57,7 @@ namespace sgt {
             while (to - from >= 8) {
                 K_DIFF val;
                 uint8_t idx;
-                if constexpr (std::is_same<K_DIFF, uint16_t>::value && HAS_MINPOS) {
+                if constexpr (std::is_same<K_DIFF, uint16_t>::value && kHasMinpos) {
                     __m128i vec = _mm_loadu_si128(reinterpret_cast<const __m128i *>(from));
                     __m128i res = _mm_minpos_epu16(vec);
                     val = static_cast<K_DIFF>(_mm_extract_epi16(res, 0));
@@ -90,18 +92,19 @@ namespace sgt {
 
     template<typename T>
     const T * SmartMinElem8(const T * from, const T * to) {
-        if constexpr (std::is_same<T, uint16_t>::value && HAS_MINPOS) {
+        if constexpr (std::is_same<T, uint16_t>::value && kHasMinpos) {
             size_t size = to - from;
             if (size < 4) {
                 return std::min_element(from, to);
-            } else if (size < 8) {
-                __m128i vec = _mm_set1_epi64x(-1);
-                memcpy(&vec, from, sizeof(uint16_t) * size);
-                __m128i res = _mm_minpos_epu16(vec);
-                return from + _mm_extract_epi16(res, 1);
             } else {
-                assert(size == 8);
-                __m128i vec = _mm_loadu_si128(reinterpret_cast<const __m128i *>(from));
+                __m128i vec;
+                if (size < 8) {
+                    vec = _mm_set1_epi64x(-1);
+                    memcpy(&vec, from, sizeof(uint16_t) * size);
+                } else {
+                    assert(size == 8);
+                    vec = _mm_loadu_si128(reinterpret_cast<const __m128i *>(from));
+                }
                 __m128i res = _mm_minpos_epu16(vec);
                 return from + _mm_extract_epi16(res, 1);
             }
@@ -118,9 +121,7 @@ namespace sgt {
         size_t size = to - from;
         if (size <= 8) {
             const K_DIFF * min_it = SmartMinElem8(from, to);
-            if (min_val != nullptr) {
-                *min_val = *min_it;
-            }
+            if (min_val != nullptr) { *min_val = *min_it; }
             return min_it - from;
         }
         return CalcOffset(PyramidHeight(size) - 1, 0, min_val);
@@ -136,9 +137,7 @@ namespace sgt {
         assert(end_pos >= pos + 1);
         if (end_pos - pos <= 8) {
             const K_DIFF * min_it = SmartMinElem8(from, to);
-            if (min_val != nullptr) {
-                *min_val = *min_it;
-            }
+            if (min_val != nullptr) { *min_val = *min_it; }
             return min_it - cbegin;
         }
 
@@ -181,9 +180,7 @@ namespace sgt {
         assert(end_pos >= pos + 1);
         if (end_pos - pos <= 8) {
             const K_DIFF * min_it = SmartMinElem8(from, to);
-            if (min_val != nullptr) {
-                *min_val = *min_it;
-            }
+            if (min_val != nullptr) { *min_val = *min_it; }
             return min_it - cbegin;
         }
 
@@ -226,9 +223,7 @@ namespace sgt {
     size_t SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     NodeTpl<RANK>::Pyramid::CalcOffset(size_t level, size_t index, K_DIFF * min_val) const {
         size_t i = kAbsOffsets[level] + index;
-        if (min_val != nullptr) {
-            *min_val = vals_[i];
-        }
+        if (min_val != nullptr) { *min_val = vals_[i]; }
 
         size_t r = idxes_[i];
         do {

@@ -40,6 +40,29 @@ namespace sgt {
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
+    bool SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
+    GetRep(const Slice & k, KV_REP * rep) const {
+        const Node * cursor = OffsetToMemNode(kRootOffset);
+        if (SGT_UNLIKELY(NodeSize(cursor) == 0)) {
+            return false;
+        }
+
+        while (true) {
+            size_t idx;
+            bool direct;
+            std::tie(idx, direct, std::ignore) = FindBestMatch(cursor, k);
+
+            const auto & r = cursor->reps_[idx + direct];
+            if (helper_->IsPacked(r)) {
+                cursor = OffsetToMemNode(helper_->Unpack(r));
+            } else {
+                *rep = r;
+                return true;
+            }
+        }
+    }
+
+    template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     size_t SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     Size() const {
         auto SizeSub = [this](size_t offset, auto && SizeSub) -> size_t {
