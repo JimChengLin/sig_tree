@@ -71,7 +71,7 @@ namespace sgt {
     public:
         bool Get(const Slice & k, std::string * v) const;
 
-        bool GetRep(const Slice & k, KV_REP * rep) const;
+        KV_REP * GetRep(const Slice & k);
 
         size_t Size() const;
 

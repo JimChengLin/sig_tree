@@ -176,10 +176,7 @@ namespace sgt {
                 Slice s(reinterpret_cast<char *>(&v), sizeof(v));
                 tree.Get(s, &out);
                 assert(s == out);
-
-                uint64_t rep;
-                tree.GetRep(s, &rep);
-                assert(v == (rep >> 32));
+                assert(v == ((*tree.GetRep(s)) >> 32));
 
                 out.clear();
                 tree.Del(s);
