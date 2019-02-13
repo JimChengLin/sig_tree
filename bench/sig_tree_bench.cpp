@@ -55,7 +55,7 @@ namespace sgt {
         /*
          * Helper 接口定义了如何生成和使用 KV Token
          */
-        class Helper : public SignatureTreeTpl<KVTrans>::Helper {
+        class Helper final : public SignatureTreeTpl<KVTrans>::Helper {
         public:
             ~Helper() override = default;
 
@@ -103,7 +103,7 @@ namespace sgt {
          * 如果分配在 file-backed mmap 上可作为硬盘索引
          * 直接 malloc 就是内存索引
          */
-        class AllocatorImpl : public Allocator {
+        class AllocatorImpl final : public Allocator {
         public:
             std::unordered_set<uintptr_t> records_;
 
