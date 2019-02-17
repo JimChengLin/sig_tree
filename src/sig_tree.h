@@ -196,7 +196,7 @@ namespace sgt {
 
     private:
         Node * OffsetToMemNode(size_t offset) const {
-            return reinterpret_cast<Node *>(reinterpret_cast<char *>(allocator_->Base()) + offset);
+            return reinterpret_cast<Node *>(reinterpret_cast<uintptr_t>(allocator_->Base()) + offset);
         }
 
         static std::tuple<size_t /* idx */, bool /* direct */, size_t /* size */>

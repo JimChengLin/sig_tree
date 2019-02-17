@@ -120,6 +120,7 @@ namespace sgt {
             Helper helper;
             AllocatorImpl allocator;
             SignatureTreeTpl<KVTrans> tree(&helper, &allocator);
+            assert(tree.RootOffset() == *allocator.records_.cbegin());
 
             struct cmp {
                 bool operator()(uint32_t a, uint32_t b) const {

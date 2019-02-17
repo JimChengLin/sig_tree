@@ -73,20 +73,8 @@ namespace sgt {
     struct SliceComparator {
         using is_transparent = std::true_type;
 
-        bool operator()(const std::string & a, const std::string & b) const {
-            return a < b;
-        }
-
-        bool operator()(const Slice & a, const Slice & b) const {
+        bool operator()(Slice a, Slice b) const {
             return SliceCmp(a, b) < 0;
-        }
-
-        bool operator()(const std::string & a, const Slice & b) const {
-            return operator()(Slice(a), b);
-        }
-
-        bool operator()(const Slice & a, const std::string & b) const {
-            return operator()(a, Slice(b));
         }
     };
 
