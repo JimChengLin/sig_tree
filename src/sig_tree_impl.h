@@ -81,14 +81,18 @@ namespace sgt {
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
-    template<typename IF_DUP_CALLBACK>
+    template<typename V, typename IF_DUP_CALLBACK>
     bool SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
-    Add(const Slice & k, const Slice & v,
+    Add(const Slice & k, V && v,
         IF_DUP_CALLBACK && if_dup_callback) {
         assert(k.size() < kMaxKeyLength);
         Node * cursor = OffsetToMemNode(kRootOffset);
         if (SGT_UNLIKELY(NodeSize(cursor) == 0)) {
-            cursor->reps_[0] = helper_->Add(k, v);
+            if constexpr (std::is_convertible<V, KV_REP>::value) {
+                cursor->reps_[0] = v;
+            } else {
+                cursor->reps_[0] = helper_->Add(k, std::forward<V>(v));
+            }
             cursor->size_ = 1;
             return true;
         }
@@ -110,8 +114,13 @@ namespace sgt {
                         return false;
                     }
                 } else { // insert
-                    return CombatInsert(trans.Key(), k, v,
-                                        cursor, idx, direct);
+                    if constexpr (std::is_convertible<V, KV_REP>::value) {
+                        return CombatInsert(trans.Key(), k, v,
+                                            cursor, idx, direct);
+                    } else {
+                        return CombatInsert(trans.Key(), k, helper_->Add(k, std::forward<V>(v)),
+                                            cursor, idx, direct);
+                    }
                 }
             }
         }
@@ -216,7 +225,7 @@ namespace sgt {
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     bool SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
-    CombatInsert(const Slice & opponent, const Slice & k, const Slice & v,
+    CombatInsert(const Slice & opponent, const Slice & k, KV_REP v,
                  Node * hint, size_t hint_idx, bool hint_direct) {
         K_DIFF diff_at = 0;
         while (opponent[diff_at] == k[diff_at]) {
@@ -316,7 +325,7 @@ namespace sgt {
                     continue;
                 }
                 NodeInsert(cursor, insert_idx, insert_direct,
-                           direct, packed_diff, helper_->Add(k, v), cursor_size);
+                           direct, packed_diff, v, cursor_size);
                 break;
             }
             cursor = OffsetToMemNode(helper_->Unpack(rep));

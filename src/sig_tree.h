@@ -90,8 +90,8 @@ namespace sgt {
         }
 
         // bool(* if_dup_callback)(KV_TRANS & trans, KV_REP & rep)
-        template<typename IF_DUP_CALLBACK  = std::false_type>
-        bool Add(const Slice & k, const Slice & v,
+        template<typename V = Slice, typename IF_DUP_CALLBACK = std::false_type>
+        bool Add(const Slice & k, V && v,
                  IF_DUP_CALLBACK && if_dup_callback = {});
 
         bool Del(const Slice & k);
@@ -202,7 +202,7 @@ namespace sgt {
         static std::tuple<size_t /* idx */, bool /* direct */, size_t /* size */>
         FindBestMatch(const Node * node, const Slice & k);
 
-        bool CombatInsert(const Slice & opponent, const Slice & k, const Slice & v,
+        bool CombatInsert(const Slice & opponent, const Slice & k, KV_REP v,
                           Node * hint, size_t hint_idx, bool hint_direct);
 
         void NodeSplit(Node * parent);
