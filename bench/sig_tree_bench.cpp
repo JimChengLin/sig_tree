@@ -225,6 +225,11 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
             }
             // Get - 结束
 
+            // 统计
+            std::cout << "sig_tree_cmp_times: " << sig_tree_cmp_times << std::endl;
+            std::cout << "sig_tree_mem_pages: " << allocator.records_.size() << std::endl;
+            std::cout << "std_set_cmp_times : " << std_set_cmp_times << std::endl;
+
             {
                 Helper helper_rebuild;
                 AllocatorImpl allocator_rebuild;
@@ -258,11 +263,6 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
                 TIME_END;
                 PRINT_TIME("SGT - Del");
             }
-
-            // 比较次数统计
-            std::cout << "sig_tree_cmp_times: " << sig_tree_cmp_times << std::endl;
-            std::cout << "sig_tree_mem_pages: " << allocator.records_.size() << std::endl;
-            std::cout << "std_set_cmp_times: " << std_set_cmp_times << std::endl;
 
             for (auto & s:src) {
                 free(s);

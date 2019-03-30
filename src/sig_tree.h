@@ -212,13 +212,16 @@ namespace sgt {
 
         void NodeCompact(Node * node);
 
-        Page RebuildHeadNode(const Node * node, SignatureTreeTpl * dst) const;
+        Page RebuildHeadNode(const Node * node, SignatureTreeTpl * dst,
+                             std::vector<Page> * pool) const;
 
         Page RebuildInternalNode(const Node * node,
                                  const K_DIFF * cbegin, const K_DIFF * cend, const K_DIFF * min_it,
-                                 typename Node::Pyramid & pyramid, bool direct, SignatureTreeTpl * dst) const;
+                                 typename Node::Pyramid & pyramid, bool direct, SignatureTreeTpl * dst,
+                                 std::vector<Page> * pool) const;
 
-        static Page RebuildLRPagesToTree(Page && l, Page && r, K_DIFF diff, SignatureTreeTpl * dst);
+        static Page RebuildLRPagesToTree(Page && l, Page && r, K_DIFF diff, SignatureTreeTpl * dst,
+                                         std::vector<Page> * pool);
 
         static size_t RebuildPageToTree(const Page & page, SignatureTreeTpl * dst);
 
