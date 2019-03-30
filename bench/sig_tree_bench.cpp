@@ -7,12 +7,14 @@
 #include "../src/sig_tree.h"
 #include "../src/sig_tree_impl.h"
 #include "../src/sig_tree_node_impl.h"
+#include "../src/sig_tree_rebuild_impl.h"
+#include "../src/sig_tree_visit_impl.h"
 
 namespace sgt {
     namespace sig_tree_bench {
         // 字符串比较次数
-        unsigned int sig_tree_cmp_times = 0;
-        unsigned int std_set_cmp_times = 0;
+        static unsigned int sig_tree_cmp_times = 0;
+        static unsigned int std_set_cmp_times = 0;
 
         // --- 实现接口 - 开始
 
@@ -222,6 +224,40 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
                 PRINT_TIME("std::set - find");
             }
             // Get - 结束
+
+            {
+                Helper helper_rebuild;
+                AllocatorImpl allocator_rebuild;
+                SignatureTreeTpl<KVTrans> tree_rebuild(&helper_rebuild, &allocator_rebuild);
+                {
+                    TIME_START;
+                    tree.Rebuild(&tree_rebuild);
+                    TIME_END;
+                    PRINT_TIME("SGT - Rebuild");
+                }
+                {
+                    TIME_START;
+                    tree_rebuild.VisitDel<tree.kBackward>({}, [](auto) {
+                        return std::make_pair(true, true);
+                    });
+                    TIME_END;
+                    PRINT_TIME("SGT - VisitDel");
+                }
+            }
+            {
+                TIME_START;
+                tree.Visit<tree.kForward>({}, [](auto) { return true; });
+                TIME_END;
+                PRINT_TIME("SGT - Visit");
+            }
+            {
+                TIME_START;
+                for (const auto & s:src) {
+                    tree.Del(reinterpret_cast<char *>(s));
+                }
+                TIME_END;
+                PRINT_TIME("SGT - Del");
+            }
 
             // 比较次数统计
             std::cout << "sig_tree_cmp_times: " << sig_tree_cmp_times << std::endl;

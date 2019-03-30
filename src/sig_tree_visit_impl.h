@@ -30,7 +30,7 @@ namespace sgt {
         };
 
         auto next = [self, &que, &leftmost]() {
-            do {
+            while (!que.empty()) {
                 auto & p = que.back();
                 if (++p.second < NodeSize(p.first)) {
                     const auto & rep = p.first->reps_[p.second];
@@ -40,7 +40,7 @@ namespace sgt {
                     break;
                 }
                 que.pop_back();
-            } while (!que.empty());
+            }
         };
 
         auto rightmost = [self, &que](Node * cursor) {
@@ -57,7 +57,7 @@ namespace sgt {
         };
 
         auto prev = [self, &que, &rightmost]() {
-            do {
+            while (!que.empty()) {
                 auto & p = que.back();
                 if (p.second != 0) {
                     --p.second;
@@ -68,7 +68,7 @@ namespace sgt {
                     break;
                 }
                 que.pop_back();
-            } while (!que.empty());
+            }
         };
 
         if (target.size() == 0) {
