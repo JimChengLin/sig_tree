@@ -94,6 +94,14 @@ namespace sgt {
             pool->emplace_back(std::move(r));
             return std::move(l);
         } else {
+            constexpr uint64_t kAcceptable = kNodeRepRank * 0.625;
+            if (std::min(l.reps.size(), r.reps.size()) >= kAcceptable) {
+                l.reps = {dst->helper_->Pack(RebuildPageToTree(l, dst)),
+                          dst->helper_->Pack(RebuildPageToTree(r, dst))};
+                l.diffs = {diff};
+                pool->emplace_back(std::move(r));
+                return std::move(l);
+            }
             if (l.reps.size() <= r.reps.size()) {
                 l.diffs.emplace_back(diff);
                 l.reps.emplace_back(dst->helper_->Pack(RebuildPageToTree(r, dst)));
