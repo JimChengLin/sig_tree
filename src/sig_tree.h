@@ -78,15 +78,19 @@ namespace sgt {
         size_t RootOffset() const { return kRootOffset; }
 
         // bool(* visitor)(const KV_REP & rep)
-        template<bool BACKWARD, typename VISITOR>
-        void Visit(const Slice & target, VISITOR && visitor) const {
-            VisitGenericImpl<const SignatureTreeTpl *, BACKWARD>(this, target, std::forward<VISITOR>(visitor));
+        template<bool BACKWARD, typename VISITOR, typename E = std::false_type>
+        void Visit(const Slice & target, VISITOR && visitor, E && expected = {}) const {
+            VisitGenericImpl<const SignatureTreeTpl *, BACKWARD>(this, target,
+                                                                 std::forward<VISITOR>(visitor),
+                                                                 std::forward<E>(expected));
         }
 
         // std::pair<bool, bool>(* visitor)(KV_REP & rep)
-        template<bool BACKWARD, typename VISITOR>
-        void VisitDel(const Slice & target, VISITOR && visitor) {
-            VisitGenericImpl<SignatureTreeTpl *, BACKWARD>(this, target, std::forward<VISITOR>(visitor));
+        template<bool BACKWARD, typename VISITOR, typename E = std::false_type>
+        void VisitDel(const Slice & target, VISITOR && visitor, E && expected = {}) {
+            VisitGenericImpl<SignatureTreeTpl *, BACKWARD>(this, target,
+                                                           std::forward<VISITOR>(visitor),
+                                                           std::forward<E>(expected));
         }
 
         // bool(* if_dup_callback)(KV_TRANS & trans, KV_REP & rep)
@@ -247,8 +251,8 @@ namespace sgt {
             return {packed_diff >> 3, (~packed_diff) & 0b111};
         }
 
-        template<typename T, bool BACKWARD, typename VISITOR>
-        static void VisitGenericImpl(T self, const Slice & target, VISITOR && visitor);
+        template<typename T, bool BACKWARD, typename VISITOR, typename E>
+        static void VisitGenericImpl(T self, const Slice & target, VISITOR && visitor, E && expected);
 
     public:
         enum {

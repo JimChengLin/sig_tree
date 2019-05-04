@@ -209,10 +209,10 @@ namespace sgt {
                 assert(it == set.cend());
 
                 it = expect.cbegin();
-                tree.Visit<tree.kForward>("", [&it](const uint64_t & rep) {
+                tree.Visit<tree.kForward>("\0", [&it](const uint64_t & rep) {
                     uint32_t v = *it++;
                     return v == (rep >> 32);
-                });
+                }, 0);
                 assert(it == expect.cend());
             }
             {

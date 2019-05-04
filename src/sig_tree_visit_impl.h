@@ -8,9 +8,9 @@
 
 namespace sgt {
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
-    template<typename T, bool BACKWARD, typename VISITOR>
+    template<typename T, bool BACKWARD, typename VISITOR, typename E>
     void SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
-    VisitGenericImpl(T self, const Slice & target, VISITOR && visitor) {
+    VisitGenericImpl(T self, const Slice & target, VISITOR && visitor, E && expected) {
         Node * cursor = self->OffsetToMemNode(self->kRootOffset);
         if (SGT_UNLIKELY(NodeSize(cursor) == 0)) {
             return;
@@ -90,6 +90,12 @@ namespace sgt {
                 if (self->helper_->IsPacked(rep)) {
                     cursor = self->OffsetToMemNode(self->helper_->Unpack(rep));
                 } else {
+                    if constexpr (!std::is_same<E, std::false_type>::value) {
+                        if (expected == rep) {
+                            break;
+                        }
+                    }
+
                     const auto & trans = self->helper_->Trans(rep);
                     if (trans == target) {
                     } else { // Reseek
