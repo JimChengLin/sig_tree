@@ -21,8 +21,8 @@ namespace sgt {
             while (true) {
                 que.emplace_back(cursor, 0);
                 const auto & rep = cursor->reps_[0];
-                if (self->helper_->IsPacked(rep)) {
-                    cursor = self->OffsetToMemNode(self->helper_->Unpack(rep));
+                if (self->IsPacked(rep)) {
+                    cursor = self->OffsetToMemNode(self->Unpack(rep));
                 } else {
                     break;
                 }
@@ -34,8 +34,8 @@ namespace sgt {
                 auto & p = que.back();
                 if (++p.second < NodeSize(p.first)) {
                     const auto & rep = p.first->reps_[p.second];
-                    if (self->helper_->IsPacked(rep)) {
-                        leftmost(self->OffsetToMemNode(self->helper_->Unpack(rep)));
+                    if (self->IsPacked(rep)) {
+                        leftmost(self->OffsetToMemNode(self->Unpack(rep)));
                     }
                     break;
                 }
@@ -48,8 +48,8 @@ namespace sgt {
                 size_t rep_idx = NodeSize(cursor) - 1;
                 que.emplace_back(cursor, rep_idx);
                 const auto & rep = cursor->reps_[rep_idx];
-                if (self->helper_->IsPacked(rep)) {
-                    cursor = self->OffsetToMemNode(self->helper_->Unpack(rep));
+                if (self->IsPacked(rep)) {
+                    cursor = self->OffsetToMemNode(self->Unpack(rep));
                 } else {
                     break;
                 }
@@ -62,8 +62,8 @@ namespace sgt {
                 if (p.second != 0) {
                     --p.second;
                     const auto & rep = p.first->reps_[p.second];
-                    if (self->helper_->IsPacked(rep)) {
-                        rightmost(self->OffsetToMemNode(self->helper_->Unpack(rep)));
+                    if (self->IsPacked(rep)) {
+                        rightmost(self->OffsetToMemNode(self->Unpack(rep)));
                     }
                     break;
                 }
@@ -87,8 +87,8 @@ namespace sgt {
                 que.emplace_back(cursor, rep_idx);
 
                 const auto & rep = cursor->reps_[rep_idx];
-                if (self->helper_->IsPacked(rep)) {
-                    cursor = self->OffsetToMemNode(self->helper_->Unpack(rep));
+                if (self->IsPacked(rep)) {
+                    cursor = self->OffsetToMemNode(self->Unpack(rep));
                 } else {
                     if constexpr (!std::is_same<E, std::false_type>::value) {
                         if (expected == rep) {
@@ -193,13 +193,13 @@ namespace sgt {
                                 que.emplace_back(cursor, rep_idx);
 
                                 const auto & rep = cursor->reps_[rep_idx];
-                                if (cursor->diffs_[insert_idx] > packed_diff || !self->helper_->IsPacked(rep)) {
+                                if (cursor->diffs_[insert_idx] > packed_diff || !self->IsPacked(rep)) {
                                     if (direct) {
                                         next();
                                     }
                                     break;
                                 }
-                                cursor = self->OffsetToMemNode(self->helper_->Unpack(rep));
+                                cursor = self->OffsetToMemNode(self->Unpack(rep));
                             }
                         }(trans.Key(), target, cursor, idx, direct);
 
@@ -254,8 +254,8 @@ namespace sgt {
                             it->second += rep_idx;
                             que.pop_back();
                         } else if (const auto & r = node->reps_[0];
-                                size == 1 && self->helper_->IsPacked(r)) {
-                            Node * child = self->OffsetToMemNode(self->helper_->Unpack(r));
+                                size == 1 && self->IsPacked(r)) {
+                            Node * child = self->OffsetToMemNode(self->Unpack(r));
                             self->NodeMerge(node, 0, false, 1,
                                             child, NodeSize(child));
                             que.pop_back();
@@ -265,8 +265,8 @@ namespace sgt {
                             std::tie(node, rep_idx) = que.back();
                             if (rep_idx < NodeSize(node)) {
                                 const auto & rep = node->reps_[rep_idx];
-                                if (self->helper_->IsPacked(rep)) {
-                                    leftmost(self->OffsetToMemNode(self->helper_->Unpack(rep)));
+                                if (self->IsPacked(rep)) {
+                                    leftmost(self->OffsetToMemNode(self->Unpack(rep)));
                                 }
                                 continue;
                             }

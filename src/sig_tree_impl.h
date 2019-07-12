@@ -30,8 +30,8 @@ namespace sgt {
             std::tie(idx, direct, std::ignore) = FindBestMatch(cursor, k);
 
             const auto & rep = cursor->reps_[idx + direct];
-            if (helper_->IsPacked(rep)) {
-                cursor = OffsetToMemNode(helper_->Unpack(rep));
+            if (IsPacked(rep)) {
+                cursor = OffsetToMemNode(Unpack(rep));
             } else {
                 const auto & trans = helper_->Trans(rep);
                 return trans.Get(k, v);
@@ -53,8 +53,8 @@ namespace sgt {
             std::tie(idx, direct, std::ignore) = FindBestMatch(cursor, k);
 
             auto & r = cursor->reps_[idx + direct];
-            if (helper_->IsPacked(r)) {
-                cursor = OffsetToMemNode(helper_->Unpack(r));
+            if (IsPacked(r)) {
+                cursor = OffsetToMemNode(Unpack(r));
             } else {
                 return &r;
             }
@@ -69,8 +69,8 @@ namespace sgt {
             const Node * cursor = OffsetToMemNode(offset);
             for (size_t i = 0; i < NodeSize(cursor); ++i) {
                 const auto & rep = cursor->reps_[i];
-                if (helper_->IsPacked(rep)) {
-                    cnt += SizeSub(helper_->Unpack(rep), SizeSub);
+                if (IsPacked(rep)) {
+                    cnt += SizeSub(Unpack(rep), SizeSub);
                 } else {
                     ++cnt;
                 }
@@ -103,8 +103,8 @@ namespace sgt {
             std::tie(idx, direct, std::ignore) = FindBestMatch(cursor, k);
 
             auto & rep = cursor->reps_[idx + direct];
-            if (helper_->IsPacked(rep)) {
-                cursor = OffsetToMemNode(helper_->Unpack(rep));
+            if (IsPacked(rep)) {
+                cursor = OffsetToMemNode(Unpack(rep));
             } else {
                 auto && trans = helper_->Trans(rep);
                 if (trans == k) {
@@ -146,12 +146,12 @@ namespace sgt {
             std::tie(idx, direct, size) = FindBestMatch(cursor, k);
 
             const auto & rep = cursor->reps_[idx + direct];
-            if (helper_->IsPacked(rep)) {
+            if (IsPacked(rep)) {
                 parent = cursor;
                 parent_idx = idx;
                 parent_direct = direct;
                 parent_size = size;
-                cursor = OffsetToMemNode(helper_->Unpack(rep));
+                cursor = OffsetToMemNode(Unpack(rep));
             } else {
                 auto && trans = helper_->Trans(rep);
                 if (trans == k) {
@@ -161,8 +161,8 @@ namespace sgt {
                         NodeMerge(parent, parent_idx, parent_direct, parent_size,
                                   cursor, size);
                     } else if (const auto & r = cursor->reps_[0];
-                            size == 1 && helper_->IsPacked(r)) {
-                        Node * child = OffsetToMemNode(helper_->Unpack(r));
+                            size == 1 && IsPacked(r)) {
+                        Node * child = OffsetToMemNode(Unpack(r));
                         NodeMerge(cursor, 0, false, 1,
                                   child, NodeSize(child));
                     }
@@ -311,7 +311,7 @@ namespace sgt {
             }
 
             const auto & rep = cursor->reps_[insert_idx + insert_direct];
-            if (cursor->diffs_[insert_idx] > packed_diff || !helper_->IsPacked(rep)) {
+            if (cursor->diffs_[insert_idx] > packed_diff || !IsPacked(rep)) {
                 if (IsNodeFull(cursor)) {
                     try {
                         NodeSplit(cursor);
@@ -329,7 +329,7 @@ namespace sgt {
                            direct, packed_diff, v, cursor_size);
                 break;
             }
-            cursor = OffsetToMemNode(helper_->Unpack(rep));
+            cursor = OffsetToMemNode(Unpack(rep));
         }
         return true;
     }
@@ -345,8 +345,8 @@ namespace sgt {
     NodeSplit(Node * parent) {
         for (size_t i = 0; i < parent->reps_.size(); ++i) {
             const auto & rep = parent->reps_[i];
-            if (helper_->IsPacked(rep)) {
-                Node * child = OffsetToMemNode(helper_->Unpack(rep));
+            if (IsPacked(rep)) {
+                Node * child = OffsetToMemNode(Unpack(rep));
                 if (!IsNodeFull(child)) {
                     size_t child_size = NodeSize(child);
 
@@ -450,7 +450,7 @@ namespace sgt {
 
         del_gaps(parent->diffs_, nth, parent->diffs_.size(), item_num);
         del_gaps(parent->reps_, nth + 1, parent->reps_.size(), item_num);
-        parent->reps_[nth] = helper_->Pack(offset);
+        parent->reps_[nth] = Pack(offset);
 
         child->size_ = static_cast<uint32_t>(item_num) + 1;
         parent->size_ -= item_num;
@@ -463,7 +463,7 @@ namespace sgt {
     NodeMerge(Node * parent, size_t idx, bool direct, size_t parent_size,
               Node * child, size_t child_size) {
         idx += static_cast<size_t>(direct);
-        size_t offset = helper_->Unpack(parent->reps_[idx]);
+        size_t offset = Unpack(parent->reps_[idx]);
 
         add_gaps(parent->diffs_, idx, parent_size - 1, child_size - 1);
         add_gaps(parent->reps_, idx + 1, parent_size, child_size - 1);
@@ -482,8 +482,8 @@ namespace sgt {
         for (size_t i = 0; !IsNodeFull(node) && i < NodeSize(node); ++i) {
             restart:
             const auto & rep = node->reps_[i];
-            if (helper_->IsPacked(rep)) {
-                Node * child = OffsetToMemNode(helper_->Unpack(rep));
+            if (IsPacked(rep)) {
+                Node * child = OffsetToMemNode(Unpack(rep));
                 size_t child_size = NodeSize(child);
                 size_t node_size = NodeSize(node);
 
@@ -542,8 +542,8 @@ namespace sgt {
 
         for (size_t i = 0; i < NodeSize(node); ++i) {
             const auto & rep = node->reps_[i];
-            if (helper_->IsPacked(rep)) {
-                NodeCompact(OffsetToMemNode(helper_->Unpack(rep)));
+            if (IsPacked(rep)) {
+                NodeCompact(OffsetToMemNode(Unpack(rep)));
             }
         }
     }

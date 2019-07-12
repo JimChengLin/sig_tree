@@ -256,6 +256,31 @@ namespace sgt {
         template<typename T, bool BACKWARD, typename VISITOR, typename E>
         static void VisitGenericImpl(T self, const Slice & target, VISITOR && visitor, E && expected);
 
+    private:
+        inline KV_REP Pack(size_t offset) const {
+            if constexpr (has_pack<KV_TRANS>::value) {
+                return KV_TRANS::Pack(offset);
+            } else {
+                return helper_->Pack(offset);
+            }
+        }
+
+        inline size_t Unpack(const KV_REP & rep) const {
+            if constexpr (has_unpack<KV_TRANS>::value) {
+                return KV_TRANS::Unpack(rep);
+            } else {
+                return helper_->Unpack(rep);
+            }
+        }
+
+        inline bool IsPacked(const KV_REP & rep) const {
+            if constexpr (has_is_packed<KV_TRANS>::value) {
+                return KV_TRANS::IsPacked(rep);
+            } else {
+                return helper_->IsPacked(rep);
+            }
+        }
+
     public:
         enum {
             kNodeRank = NodeRank<>::value,

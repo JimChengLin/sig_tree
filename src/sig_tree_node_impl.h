@@ -3,7 +3,9 @@
 #define SIG_TREE_SIG_TREE_NODE_IMPL_H
 
 #if __has_include(<smmintrin.h>)
+
 #include <smmintrin.h>
+
 namespace sgt {
     constexpr bool kHasMinpos = true;
 }

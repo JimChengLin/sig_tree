@@ -64,16 +64,16 @@ namespace sgt {
             cend = min_it;
             if (cbegin == cend) {
                 const auto & rep = node->reps_[cend - node->diffs_.cbegin()];
-                return helper_->IsPacked(rep) ? RebuildHeadNode(OffsetToMemNode(helper_->Unpack(rep)), dst, pool)
-                                              : make_page(pool, rep);
+                return IsPacked(rep) ? RebuildHeadNode(OffsetToMemNode(Unpack(rep)), dst, pool)
+                                     : make_page(pool, rep);
             }
             min_it = node->diffs_.cbegin() + pyramid.TrimRight(node->diffs_.cbegin(), cbegin, cend, &min_val);
         } else {  // go right
             cbegin = min_it + 1;
             if (cbegin == cend) {
                 const auto & rep = node->reps_[cend - node->diffs_.cbegin()];
-                return helper_->IsPacked(rep) ? RebuildHeadNode(OffsetToMemNode(helper_->Unpack(rep)), dst, pool)
-                                              : make_page(pool, rep);
+                return IsPacked(rep) ? RebuildHeadNode(OffsetToMemNode(Unpack(rep)), dst, pool)
+                                     : make_page(pool, rep);
             }
             min_it = node->diffs_.cbegin() + pyramid.TrimLeft(node->diffs_.cbegin(), cbegin, cend, &min_val);
         }
@@ -97,20 +97,20 @@ namespace sgt {
         } else {
             constexpr uint64_t kAcceptable = kNodeRepRank * 0.625;
             if (std::min(l.reps.size(), r.reps.size()) >= kAcceptable) {
-                l.reps = {dst->helper_->Pack(RebuildPageToTree(l, dst)),
-                          dst->helper_->Pack(RebuildPageToTree(r, dst))};
+                l.reps = {dst->Pack(RebuildPageToTree(l, dst)),
+                          dst->Pack(RebuildPageToTree(r, dst))};
                 l.diffs = {diff};
                 pool->emplace_back(std::move(r));
                 return std::move(l);
             }
             if (l.reps.size() <= r.reps.size()) {
                 l.diffs.emplace_back(diff);
-                l.reps.emplace_back(dst->helper_->Pack(RebuildPageToTree(r, dst)));
+                l.reps.emplace_back(dst->Pack(RebuildPageToTree(r, dst)));
                 pool->emplace_back(std::move(r));
                 return std::move(l);
             } else {
                 r.diffs.insert(r.diffs.begin(), diff);
-                r.reps.insert(r.reps.begin(), dst->helper_->Pack(RebuildPageToTree(l, dst)));
+                r.reps.insert(r.reps.begin(), dst->Pack(RebuildPageToTree(l, dst)));
                 pool->emplace_back(std::move(l));
                 return std::move(r);
             }
