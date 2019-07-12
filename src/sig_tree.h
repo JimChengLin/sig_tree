@@ -54,6 +54,7 @@ namespace sgt {
     private:
         Helper * const helper_;
         Allocator * const allocator_;
+        void * base_;
         const size_t kRootOffset;
 
     public:
@@ -62,6 +63,7 @@ namespace sgt {
         SignatureTreeTpl(Helper * helper, Allocator * allocator, size_t root_offset)
                 : helper_(helper),
                   allocator_(allocator),
+                  base_(allocator->Base()),
                   kRootOffset(root_offset) {}
 
         SignatureTreeTpl(const SignatureTreeTpl &) = delete;
@@ -200,7 +202,7 @@ namespace sgt {
 
     private:
         Node * OffsetToMemNode(size_t offset) const {
-            return reinterpret_cast<Node *>(reinterpret_cast<uintptr_t>(allocator_->Base()) + offset);
+            return reinterpret_cast<Node *>(reinterpret_cast<uintptr_t>(base_) + offset);
         }
 
         static std::tuple<size_t /* idx */, bool /* direct */, size_t /* size */>

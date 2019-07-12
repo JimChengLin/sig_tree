@@ -317,8 +317,9 @@ namespace sgt {
                         NodeSplit(cursor);
                     } catch (const AllocatorFullException &) {
                         size_t offset = reinterpret_cast<uintptr_t>(cursor) -
-                                        reinterpret_cast<uintptr_t>(allocator_->Base());
+                                        reinterpret_cast<uintptr_t>(base_);
                         allocator_->Grow();
+                        base_ = allocator_->Base();
                         cursor = OffsetToMemNode(offset);
                         NodeSplit(cursor);
                     }

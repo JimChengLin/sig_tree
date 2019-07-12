@@ -8,6 +8,7 @@ namespace sgt {
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     void SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     Rebuild(SignatureTreeTpl * dst) const {
+        assert(dst != this);
         std::vector<Page> pool;
         RebuildPageToNode(RebuildHeadNode(OffsetToMemNode(kRootOffset), dst, &pool),
                           dst->OffsetToMemNode(dst->kRootOffset));
@@ -124,6 +125,7 @@ namespace sgt {
             offset = dst->allocator_->AllocatePage();
         } catch (const AllocatorFullException &) {
             dst->allocator_->Grow();
+            dst->base_ = dst->allocator_->Base();
             offset = dst->allocator_->AllocatePage();
         }
         Node * node = new(dst->OffsetToMemNode(offset)) Node();

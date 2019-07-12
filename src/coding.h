@@ -3,7 +3,6 @@
 #define SIG_TREE_CODING_H
 
 #include <cstdint>
-#include <cstring>
 
 namespace sgt {
     static_assert(sizeof(uint8_t) == sizeof(char));

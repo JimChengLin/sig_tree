@@ -2,10 +2,6 @@
 #ifndef SIG_TREE_ALLOCATOR_H
 #define SIG_TREE_ALLOCATOR_H
 
-/*
- * SGT 内存分配器接口
- */
-
 #include <exception>
 
 namespace sgt {

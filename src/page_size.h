@@ -2,10 +2,6 @@
 #ifndef SIG_TREE_PAGE_SIZE_H
 #define SIG_TREE_PAGE_SIZE_H
 
-/*
- * 分页大小
- */
-
 namespace sgt {
     constexpr unsigned int kPageSize = 4096; // 4KB
 }
