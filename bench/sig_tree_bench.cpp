@@ -52,6 +52,19 @@ namespace sgt {
                 }
                 return false;
             }
+
+        public:
+            static uint64_t Pack(size_t offset) {
+                return offset + 1;
+            }
+
+            static size_t Unpack(const uint64_t & rep) {
+                return rep - 1;
+            }
+
+            static bool IsPacked(const uint64_t & rep) {
+                return rep % 2 == 1;
+            }
         };
 
         /*
