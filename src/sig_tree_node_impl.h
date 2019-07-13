@@ -153,7 +153,7 @@ namespace sgt {
 
             const size_t offset = kAbsOffsets[level++];
             uint8_t & upper_idx = idxes_[offset + pos];
-            if ((accumulator = (upper_idx + accumulator > r))) {
+            if ((accumulator = (static_cast<size_t>(upper_idx + accumulator) > r))) {
                 cbegin = vals_.cbegin() + offset;
                 from = cbegin + pos;
                 to = cbegin + end_pos;

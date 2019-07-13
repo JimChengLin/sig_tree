@@ -135,9 +135,9 @@ namespace sgt {
         }
 
         Node * parent = nullptr;
-        size_t parent_idx;
-        bool parent_direct;
-        size_t parent_size;
+        size_t parent_idx{};
+        bool parent_direct{};
+        size_t parent_size{};
 
         while (true) {
             size_t idx;
@@ -427,14 +427,14 @@ namespace sgt {
             assert(min_it == std::min_element(cbegin, cend));
             if (min_it - cbegin <= cend - min_it) { // go right
                 cbegin = min_it + 1;
-                if (cend - cbegin <= parent->diffs_.size() / 2) {
+                if (static_cast<size_t>(cend - cbegin) <= parent->diffs_.size() / 2) {
                     break;
                 }
                 min_it = parent->diffs_.cbegin() +
                          pyramid.TrimLeft(parent->diffs_.cbegin(), cbegin, cend);
             } else { // go left
                 cend = min_it;
-                if (cend - cbegin <= parent->diffs_.size() / 2) {
+                if (static_cast<size_t>(cend - cbegin) <= parent->diffs_.size() / 2) {
                     break;
                 }
                 min_it = parent->diffs_.cbegin() +

@@ -16,7 +16,6 @@ namespace sgt {
          * V = uint32_t
          * little-endian REP : uint64_t = (V << 32) | K
          *
-         * NullRep = UINT64_MAX
          * if REP % 2 = 0, then REP is packed
          */
 
@@ -212,7 +211,7 @@ namespace sgt {
                 tree.Visit<tree.kForward>("\0", [&it](const uint64_t & rep) {
                     uint32_t v = *it++;
                     return v == (rep >> 32);
-                }, 0);
+                }, 0u);
                 assert(it == expect.cend());
             }
             {
@@ -228,6 +227,6 @@ namespace sgt {
                 });
                 assert(it == expect.cend());
             }
-        };
+        }
     }
 }

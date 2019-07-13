@@ -2,10 +2,6 @@
 #ifndef SIG_TREE_SLICE_H
 #define SIG_TREE_SLICE_H
 
-/*
- * 数据引用类
- */
-
 #include <cassert>
 #include <cstring>
 #include <string>

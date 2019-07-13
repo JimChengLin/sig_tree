@@ -17,7 +17,7 @@ namespace sgt {
         }
         rocksdb::autovector<std::pair<Node *, size_t /* rep_idx */>, 16> que;
 
-        auto leftmost = [self, &que](Node * cursor) {
+        [[maybe_unused]] auto leftmost = [self, &que](Node * cursor) {
             while (true) {
                 que.emplace_back(cursor, 0);
                 const auto & rep = cursor->reps_[0];
@@ -29,7 +29,7 @@ namespace sgt {
             }
         };
 
-        auto next = [self, &que, &leftmost]() {
+        [[maybe_unused]] auto next = [self, &que, &leftmost]() {
             while (!que.empty()) {
                 auto & p = que.back();
                 if (++p.second < NodeSize(p.first)) {
@@ -43,7 +43,7 @@ namespace sgt {
             }
         };
 
-        auto rightmost = [self, &que](Node * cursor) {
+        [[maybe_unused]] auto rightmost = [self, &que](Node * cursor) {
             while (true) {
                 size_t rep_idx = NodeSize(cursor) - 1;
                 que.emplace_back(cursor, rep_idx);
@@ -56,7 +56,7 @@ namespace sgt {
             }
         };
 
-        auto prev = [self, &que, &rightmost]() {
+        [[maybe_unused]] auto prev = [self, &que, &rightmost]() {
             while (!que.empty()) {
                 auto & p = que.back();
                 if (p.second != 0) {
@@ -236,8 +236,8 @@ namespace sgt {
                 if (proceed) {
                     if (del) {
                         Node * parent = nullptr;
-                        size_t parent_rep_idx;
-                        size_t parent_size;
+                        size_t parent_rep_idx{};
+                        size_t parent_size{};
                         if (it != que.begin()) {
                             std::tie(parent, parent_rep_idx) = *(--it);
                             parent_size = NodeSize(parent);

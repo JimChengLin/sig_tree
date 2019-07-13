@@ -16,8 +16,6 @@ namespace sgt {
         static unsigned int sig_tree_cmp_times = 0;
         static unsigned int std_set_cmp_times = 0;
 
-        // --- 实现接口 - 开始
-
         /*
          * 将 SGT 中表示 KV 的 Token
          * 翻译还原为 Key 和 Value 的代理类
@@ -158,8 +156,6 @@ namespace sgt {
             // 扩容
             void Grow() override {}
         };
-
-        // --- 实现接口 - 结束
 
 #define TIME_START auto start = std::chrono::high_resolution_clock::now()
 #define TIME_END auto end = std::chrono::high_resolution_clock::now()

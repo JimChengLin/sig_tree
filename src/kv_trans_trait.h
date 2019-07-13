@@ -6,7 +6,7 @@
 
 #include "slice.h"
 
-#define SGT_CHECK_EXPR(Name, Expr) \
+#define SGT_CHECK_EXPR(Name, Expr)                                         \
 template<typename U>                                                       \
 struct Name {                                                              \
 private:                                                                   \
