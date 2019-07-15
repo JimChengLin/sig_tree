@@ -61,9 +61,9 @@ namespace sgt {
                 uint8_t idx;
                 if constexpr (std::is_same<K_DIFF, uint16_t>::value && kHasMinpos) {
                     __m128i vec = _mm_loadu_si128(reinterpret_cast<const __m128i *>(from));
-                    __m128i res = _mm_minpos_epu16(vec);
-                    val = static_cast<K_DIFF>(_mm_extract_epi16(res, 0));
-                    idx = static_cast<uint8_t>(_mm_extract_epi16(res, 1));
+                    vec = _mm_minpos_epu16(vec);
+                    val = static_cast<K_DIFF>(_mm_extract_epi16(vec, 0));
+                    idx = static_cast<uint8_t>(_mm_extract_epi16(vec, 1));
                 } else {
                     const K_DIFF * min_elem = std::min_element(from, from + 8);
                     val = *min_elem;
@@ -107,8 +107,8 @@ namespace sgt {
                     assert(size == 8);
                     vec = _mm_loadu_si128(reinterpret_cast<const __m128i *>(from));
                 }
-                __m128i res = _mm_minpos_epu16(vec);
-                return from + _mm_extract_epi16(res, 1);
+                vec = _mm_minpos_epu16(vec);
+                return from + _mm_extract_epi16(vec, 1);
             }
         } else {
             return std::min_element(from, to);
