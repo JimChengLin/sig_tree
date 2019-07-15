@@ -120,13 +120,27 @@ namespace sgt {
             return num;
         }
 
-        inline static constexpr size_t PyramidHeight(size_t rank) {
+        inline static constexpr size_t CalcPyramidHeight(size_t rank) {
             size_t height = 0;
             do {
                 rank = (rank + kPyramidBrickLength - 1) / kPyramidBrickLength;
                 ++height;
             } while (rank > 1);
             return height;
+        }
+
+        inline static constexpr size_t PyramidHeight(size_t rank) {
+            if constexpr (kPyramidBrickLength != 8) {
+                return CalcPyramidHeight(rank);
+            } else {
+                if (rank <= 8) {
+                    return 1;
+                } else if (rank <= 64) {
+                    return 2;
+                } else {
+                    return 3;
+                }
+            }
         }
 
         template<size_t RANK>
@@ -289,6 +303,8 @@ namespace sgt {
             kForward = false,
             kBackward = true,
         };
+
+        static_assert(PyramidHeight(kNodeRank) == CalcPyramidHeight(kNodeRank));
     };
 }
 
