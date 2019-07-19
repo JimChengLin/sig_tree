@@ -191,6 +191,19 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
             };
             std::set<const char *, cmp> set;
 
+            // 初始化 std::unordered_set
+            struct hash {
+                size_t operator()(const char * a) const {
+                    return SliceHasher()(Slice(a));
+                }
+            };
+            struct equal {
+                bool operator()(const char * a, const char * b) const {
+                    return strcmp(a, b) == 0;
+                }
+            };
+            std::unordered_set<const char *, hash, equal> unordered_set;
+
             // Add - 开始
             {
                 TIME_START;
@@ -207,6 +220,14 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
                 }
                 TIME_END;
                 PRINT_TIME("std::set - emplace");
+            }
+            {
+                TIME_START;
+                for (const auto & s:src) {
+                    unordered_set.emplace(reinterpret_cast<char *>(s));
+                }
+                TIME_END;
+                PRINT_TIME("std::unordered_set - emplace");
             }
             // Add - 结束
             {
@@ -231,6 +252,14 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
                 }
                 TIME_END;
                 PRINT_TIME("std::set - find");
+            }
+            {
+                TIME_START;
+                for (const auto & s:src) {
+                    unordered_set.find(reinterpret_cast<char *>(s));
+                }
+                TIME_END;
+                PRINT_TIME("std::unordered_set - find");
             }
             // Get - 结束
 
