@@ -19,6 +19,7 @@
 
 #include "allocator.h"
 #include "kv_trans_trait.h"
+#include "likely.h"
 #include "page_size.h"
 
 namespace sgt {
@@ -133,9 +134,9 @@ namespace sgt {
             if constexpr (kPyramidBrickLength != 8) {
                 return CalcPyramidHeight(rank);
             } else {
-                if (rank <= 8) {
+                if (SGT_UNLIKELY(rank <= 8)) {
                     return 1;
-                } else if (rank <= 64) {
+                } else if (SGT_UNLIKELY(rank <= 64)) {
                     return 2;
                 } else {
                     return 3;
