@@ -255,9 +255,23 @@ namespace sgt {
                         } else if (const auto & r = node->reps_[0];
                                 size == 1 && self->IsPacked(r)) {
                             Node * child = self->OffsetToMemNode(self->Unpack(r));
+                            size_t child_size = NodeSize(child);
                             self->NodeMerge(node, 0, false, 1,
-                                            child, NodeSize(child));
-                            que.pop_back();
+                                            child, child_size);
+                            if (rep_idx == 0) {
+                                if constexpr (!BACKWARD) {
+                                } else {
+                                    que.pop_back();
+                                }
+                            } else {
+                                assert(rep_idx == 1);
+                                if constexpr (!BACKWARD) {
+                                    que.pop_back();
+                                } else {
+                                    it->second = child_size - 1;
+                                }
+                            }
+                            continue;
                         }
 
                         if constexpr (!BACKWARD) {

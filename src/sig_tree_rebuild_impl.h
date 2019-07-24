@@ -60,7 +60,7 @@ namespace sgt {
         };
 
         K_DIFF min_val;
-        if (!direct) {  // go left
+        if (!direct) { // go left
             cend = min_it;
             if (cbegin == cend) {
                 const auto & rep = node->reps_[cend - node->diffs_.cbegin()];
@@ -68,7 +68,7 @@ namespace sgt {
                                      : make_page(pool, rep);
             }
             min_it = node->diffs_.cbegin() + pyramid.TrimRight(node->diffs_.cbegin(), cbegin, cend, &min_val);
-        } else {  // go right
+        } else { // go right
             cbegin = min_it + 1;
             if (cbegin == cend) {
                 const auto & rep = node->reps_[cend - node->diffs_.cbegin()];

@@ -285,6 +285,7 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
                     });
                     TIME_END;
                     PRINT_TIME("SGT - VisitDel");
+                    assert(tree_rebuild.Size() == 0);
                 }
             }
             {
