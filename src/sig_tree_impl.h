@@ -234,8 +234,7 @@ namespace sgt {
 
         // __builtin_clz: returns the number of leading 0-bits in x, starting at the most significant bit position
         // if x is 0, the result is undefined
-        uint8_t shift = CHAR_BIT * sizeof(unsigned int)
-                        - __builtin_clz(CharToUint8(opponent[diff_at] ^ k[diff_at])) - 1;
+        uint8_t shift = (__builtin_clz(CharToUint8(opponent[diff_at] ^ k[diff_at])) ^ 31);
         uint8_t mask = ~(static_cast<uint8_t>(1) << shift);
         auto direct = static_cast<bool>((1 + (CharToUint8(k[diff_at]) | mask)) >> 8);
 
