@@ -96,19 +96,11 @@ namespace sgt {
     const T * SmartMinElem8(const T * from, const T * to) {
         if constexpr (std::is_same<T, uint16_t>::value && kHasMinpos) {
             size_t size = to - from;
-            if (size < 4) {
+            if (size != 8) {
                 return std::min_element(from, to);
             } else {
-                __m128i vec;
-                if (size < 8) {
-                    vec = _mm_set1_epi64x(-1);
-                    memcpy(&vec, from, sizeof(uint16_t) * size);
-                } else {
-                    assert(size == 8);
-                    vec = _mm_loadu_si128(reinterpret_cast<const __m128i *>(from));
-                }
-                vec = _mm_minpos_epu16(vec);
-                return from + _mm_extract_epi16(vec, 1);
+                __m128i vec = _mm_loadu_si128(reinterpret_cast<const __m128i *>(from));
+                return from + _mm_extract_epi16(_mm_minpos_epu16(vec), 1);
             }
         } else {
             return std::min_element(from, to);

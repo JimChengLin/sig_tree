@@ -2,6 +2,7 @@
 #ifndef SIG_TREE_SIG_TREE_REBUILD_IMPL_H
 #define SIG_TREE_SIG_TREE_REBUILD_IMPL_H
 
+#include "likely.h"
 #include "sig_tree.h"
 
 namespace sgt {
