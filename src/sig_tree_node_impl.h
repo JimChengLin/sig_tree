@@ -221,10 +221,19 @@ namespace sgt {
         if (min_val != nullptr) { *min_val = vals_[i]; }
 
         size_t r = idxes_[i];
-        do {
+        if constexpr (PyramidHeight(kNodeRank) == 3) {
+            if (level == 2) {
+                index = index * 8 + r;
+                r = idxes_[kAbsOffsets[1] + index];
+            }
             index = index * 8 + r;
-            r = idxes_[kAbsOffsets[--level] + index];
-        } while (level != 0);
+            r = idxes_[kAbsOffsets[0] + index];
+        } else {
+            do {
+                index = index * 8 + r;
+                r = idxes_[kAbsOffsets[--level] + index];
+            } while (level != 0);
+        }
         return index * 8 + r;
     }
 }
