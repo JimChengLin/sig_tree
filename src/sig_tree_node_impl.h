@@ -95,14 +95,30 @@ namespace sgt {
     template<typename T>
     const T * SmartMinElem8(const T * from, const T * to) {
         if constexpr (std::is_same<T, uint16_t>::value && kHasMinpos) {
+            __m128i vec = _mm_loadu_si128(reinterpret_cast<const __m128i *>(from));
+
             size_t size = to - from;
             if (size != 8) {
                 assert(size < 8);
-                return std::min_element(from, to);
-            } else {
-                __m128i vec = _mm_loadu_si128(reinterpret_cast<const __m128i *>(from));
-                return from + _mm_extract_epi8(_mm_minpos_epu16(vec), 2);
+
+                static constexpr auto masks = []() {
+                    std::array<std::array<uint64_t, 2>, 8> arr{};
+                    arr[1][0] = UINT16_MAX;
+                    arr[2][0] = (arr[1][0] << 16) | UINT16_MAX;
+                    arr[3][0] = (arr[2][0] << 16) | UINT16_MAX;
+                    arr[4][0] = (arr[3][0] << 16) | UINT16_MAX;
+                    for (size_t i = 5; i < 8; ++i) { arr[i][0] = UINT64_MAX; }
+                    arr[5][1] = UINT16_MAX;
+                    arr[6][1] = (arr[5][1] << 16) | UINT16_MAX;
+                    arr[7][1] = (arr[6][1] << 16) | UINT16_MAX;
+                    for (size_t i = 0; i < 8; ++i) { arr[i] = {~arr[i][0], ~arr[i][1]}; }
+                    return arr;
+                }();
+
+                vec = _mm_or_si128(vec, _mm_loadu_si128(reinterpret_cast<const __m128i *>(&masks[size])));
             }
+
+            return from + _mm_extract_epi8(_mm_minpos_epu16(vec), 2);
         } else {
             return std::min_element(from, to);
         }
@@ -222,6 +238,7 @@ namespace sgt {
 
         size_t r = idxes_[i];
         if constexpr (PyramidHeight(kNodeRank) == 3) {
+            assert(level < 3);
             if (level == 2) {
                 index = index * 8 + r;
                 r = idxes_[kAbsOffsets[1] + index];
