@@ -136,6 +136,8 @@ namespace sgt {
                                   K_DIFF * min_val) const {
         size_t size = to - from;
         if (size <= 8) {
+            static_assert(!(std::is_same<K_DIFF, uint16_t>::value && kHasMinpos)
+                          || sizeof(idxes_) >= sizeof(uint16_t) * 8);
             const K_DIFF * min_it = SmartMinElem8(from, to, min_val);
             return min_it - from;
         }
