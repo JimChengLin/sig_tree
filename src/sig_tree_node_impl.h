@@ -93,7 +93,8 @@ namespace sgt {
     }
 
     template<typename T>
-    const T * SmartMinElem8(const T * from, const T * to) {
+    const T * SmartMinElem8(const T * from, const T * to,
+                            T * min_val) {
         if constexpr (std::is_same<T, uint16_t>::value && kHasMinpos) {
             __m128i vec = _mm_loadu_si128(reinterpret_cast<const __m128i *>(from));
 
@@ -118,9 +119,13 @@ namespace sgt {
                 vec = _mm_or_si128(vec, _mm_loadu_si128(reinterpret_cast<const __m128i *>(&masks[size])));
             }
 
-            return from + _mm_extract_epi8(_mm_minpos_epu16(vec), 2);
+            vec = _mm_minpos_epu16(vec);
+            if (min_val != nullptr) { *min_val = static_cast<T>(_mm_extract_epi16(vec, 0)); }
+            return from + _mm_extract_epi8(vec, 2);
         } else {
-            return std::min_element(from, to);
+            const T * min_it = std::min_element(from, to);
+            if (min_val != nullptr) { *min_val = *min_it; }
+            return min_it;
         }
     }
 
@@ -131,8 +136,7 @@ namespace sgt {
                                   K_DIFF * min_val) const {
         size_t size = to - from;
         if (size <= 8) {
-            const K_DIFF * min_it = SmartMinElem8(from, to);
-            if (min_val != nullptr) { *min_val = *min_it; }
+            const K_DIFF * min_it = SmartMinElem8(from, to, min_val);
             return min_it - from;
         }
         return CalcOffset(PyramidHeight(size) - 1, 0, min_val);
@@ -147,8 +151,7 @@ namespace sgt {
         size_t end_pos = to - cbegin;
         assert(end_pos >= pos + 1);
         if (end_pos - pos <= 8) {
-            const K_DIFF * min_it = SmartMinElem8(from, to);
-            if (min_val != nullptr) { *min_val = *min_it; }
+            const K_DIFF * min_it = SmartMinElem8(from, to, min_val);
             return min_it - cbegin;
         }
 
@@ -167,14 +170,15 @@ namespace sgt {
                 from = cbegin + pos;
                 to = cbegin + end_pos;
             } else {
-                const K_DIFF * min_elem = SmartMinElem8(from, std::min(from + (8 - r), to));
+                K_DIFF val;
+                const K_DIFF * min_elem = SmartMinElem8(from, std::min(from + (8 - r), to), &val);
                 const size_t idx = (min_elem - from) + r;
 
                 cbegin = vals_.cbegin() + offset;
                 from = cbegin + pos;
                 to = cbegin + end_pos;
 
-                *const_cast<K_DIFF *>(from) = *min_elem;
+                *const_cast<K_DIFF *>(from) = val;
                 upper_idx = static_cast<uint8_t>(idx);
             }
         } while (end_pos - pos > 1);
@@ -190,8 +194,7 @@ namespace sgt {
         size_t end_pos = to - cbegin;
         assert(end_pos >= pos + 1);
         if (end_pos - pos <= 8) {
-            const K_DIFF * min_it = SmartMinElem8(from, to);
-            if (min_val != nullptr) { *min_val = *min_it; }
+            const K_DIFF * min_it = SmartMinElem8(from, to, min_val);
             return min_it - cbegin;
         }
 
@@ -214,15 +217,16 @@ namespace sgt {
                 from = cbegin + pos;
                 to = cbegin + end_pos;
             } else {
+                K_DIFF val;
                 const K_DIFF * start = to - r;
-                const K_DIFF * min_elem = SmartMinElem8(std::max(from, start), to);
+                const K_DIFF * min_elem = SmartMinElem8(std::max(from, start), to, &val);
                 const size_t idx = min_elem - start;
 
                 cbegin = vals_.cbegin() + offset;
                 from = cbegin + pos;
                 to = cbegin + end_pos;
 
-                *const_cast<K_DIFF *>(to - 1) = *min_elem;
+                *const_cast<K_DIFF *>(to - 1) = val;
                 upper_idx = static_cast<uint8_t>(idx);
             }
         } while (end_pos - pos > 1);
