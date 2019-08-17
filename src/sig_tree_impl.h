@@ -3,6 +3,7 @@
 #define SIG_TREE_SIG_TREE_IMPL_H
 
 #include <algorithm>
+#include <xmmintrin.h>
 
 #include "coding.h"
 #include "likely.h"
@@ -184,6 +185,15 @@ namespace sgt {
     std::tuple<size_t, bool, size_t>
     SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     FindBestMatch(const Node * node, const Slice & k) {
+        _mm_prefetch(&node->size_, _MM_HINT_T0);
+        auto p = reinterpret_cast<const char *>(&node->diffs_);
+        p -= reinterpret_cast<uintptr_t>(p) % 64;
+        _mm_prefetch(p + 64 * 0, _MM_HINT_T2);
+        _mm_prefetch(p + 64 * 1, _MM_HINT_T2);
+        _mm_prefetch(p + 64 * 2, _MM_HINT_T2);
+        _mm_prefetch(p + 64 * 3, _MM_HINT_T2);
+        _mm_prefetch(p + 64 * 4, _MM_HINT_T2);
+
         size_t size = NodeSize(node);
         if (SGT_UNLIKELY(size <= 1)) {
             return {0, false, size};
