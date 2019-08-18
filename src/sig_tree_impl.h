@@ -2,8 +2,13 @@
 #ifndef SIG_TREE_SIG_TREE_IMPL_H
 #define SIG_TREE_SIG_TREE_IMPL_H
 
-#include <algorithm>
+#ifndef SGT_NO_MM_PREFETCH
+
 #include <xmmintrin.h>
+
+#endif
+
+#include <algorithm>
 
 #include "coding.h"
 #include "likely.h"
@@ -185,6 +190,7 @@ namespace sgt {
     std::tuple<size_t, bool, size_t>
     SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     FindBestMatch(const Node * node, const Slice & k) {
+#ifndef SGT_NO_MM_PREFETCH
         _mm_prefetch(&node->size_, _MM_HINT_T0);
         auto p = reinterpret_cast<const char *>(&node->diffs_);
         p -= reinterpret_cast<uintptr_t>(p) % 64;
@@ -193,6 +199,7 @@ namespace sgt {
         _mm_prefetch(p + 64 * 2, _MM_HINT_T2);
         _mm_prefetch(p + 64 * 3, _MM_HINT_T2);
         _mm_prefetch(p + 64 * 4, _MM_HINT_T2);
+#endif
 
         size_t size = NodeSize(node);
         if (SGT_UNLIKELY(size <= 1)) {
