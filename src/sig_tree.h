@@ -74,7 +74,10 @@ namespace sgt {
     public:
         bool Get(const Slice & k, std::string * v) const;
 
-        KV_REP * GetRep(const Slice & k);
+        // auto(* callback)(KV_REP * rep)
+        template<typename CALLBACK = std::false_type>
+        auto GetWithCallback(const Slice & k,
+                             CALLBACK && callback = {} /* [](KV_REP * rep) { return rep; } */);
 
         size_t Size() const;
 

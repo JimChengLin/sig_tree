@@ -29,7 +29,7 @@ namespace sgt {
             value =
             std::is_same<decltype(std::declval<const KV_TRANS>() == Slice()), bool>::value &&
             std::is_same<decltype(std::declval<const KV_TRANS>().Key()), Slice>::value &&
-            std::is_same<decltype(std::declval<const KV_TRANS>().Get(Slice(), (std::string *) {})), bool>::value,
+            std::is_same<decltype(std::declval<const KV_TRANS>().Get(Slice(), (std::string *) {})), bool>::value
         };
     };
 

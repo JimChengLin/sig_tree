@@ -46,11 +46,17 @@ namespace sgt {
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
-    KV_REP * SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
-    GetRep(const Slice & k) {
+    template<typename CALLBACK>
+    auto SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
+    GetWithCallback(const Slice & k,
+                    CALLBACK && callback) {
         Node * cursor = OffsetToMemNode(kRootOffset);
         if (SGT_UNLIKELY(NodeSize(cursor) == 0)) {
-            return nullptr;
+            if constexpr (std::is_same<CALLBACK, std::false_type>::value) {
+                return static_cast<KV_REP *>(nullptr);
+            } else {
+                return callback(static_cast<KV_REP *>(nullptr));
+            }
         }
 
         while (true) {
@@ -62,7 +68,11 @@ namespace sgt {
             if (IsPacked(r)) {
                 cursor = OffsetToMemNode(Unpack(r));
             } else {
-                return &r;
+                if constexpr (std::is_same<CALLBACK, std::false_type>::value) {
+                    return &r;
+                } else {
+                    return callback(&r);
+                }
             }
         }
     }
