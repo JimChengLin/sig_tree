@@ -305,7 +305,7 @@ namespace sgt {
             kNodeRepRank = kNodeRank + 1,
             kMaxKeyLength = std::numeric_limits<K_DIFF>::max() >> 3,
             kForward = false,
-            kBackward = true,
+            kBackward = true
         };
 
         static_assert(PyramidHeight(kNodeRank) == CalcPyramidHeight(kNodeRank));
