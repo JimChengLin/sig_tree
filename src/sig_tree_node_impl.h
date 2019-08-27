@@ -30,6 +30,42 @@ namespace sgt {
         return node->size_ == kNodeRepRank;
     }
 
+    template<typename T>
+    const T * SmartMinElem8(const T * from, const T * to, T * min_val) {
+        if constexpr (std::is_same<T, uint16_t>::value && kHasMinpos) {
+            __m128i vec = _mm_loadu_si128(reinterpret_cast<const __m128i *>(from));
+
+            size_t size = to - from;
+            if (size != 8) {
+                assert(size < 8);
+
+                static constexpr auto masks = []() {
+                    std::array<std::array<uint64_t, 2>, 8> arr{};
+                    arr[1][0] = UINT16_MAX;
+                    arr[2][0] = (arr[1][0] << 16) | UINT16_MAX;
+                    arr[3][0] = (arr[2][0] << 16) | UINT16_MAX;
+                    arr[4][0] = (arr[3][0] << 16) | UINT16_MAX;
+                    for (size_t i = 5; i < 8; ++i) { arr[i][0] = UINT64_MAX; }
+                    arr[5][1] = UINT16_MAX;
+                    arr[6][1] = (arr[5][1] << 16) | UINT16_MAX;
+                    arr[7][1] = (arr[6][1] << 16) | UINT16_MAX;
+                    for (size_t i = 0; i < 8; ++i) { arr[i] = {~arr[i][0], ~arr[i][1]}; }
+                    return arr;
+                }();
+
+                vec = _mm_or_si128(vec, _mm_loadu_si128(reinterpret_cast<const __m128i *>(&masks[size])));
+            }
+
+            vec = _mm_minpos_epu16(vec);
+            if (min_val != nullptr) { *min_val = static_cast<T>(_mm_extract_epi16(vec, 0)); }
+            return from + _mm_extract_epi8(vec, 2);
+        } else {
+            const T * min_it = std::min_element(from, to);
+            if (min_val != nullptr) { *min_val = *min_it; }
+            return min_it;
+        }
+    }
+
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     template<size_t RANK>
     void SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
@@ -77,8 +113,7 @@ namespace sgt {
 
             if (r != 0) {
                 size = q + 1;
-                const K_DIFF * min_elem = std::min_element(from, to);
-                (*val_from) = *min_elem;
+                const K_DIFF * min_elem = SmartMinElem8(from, to, val_from);
                 (*idx_from) = static_cast<uint8_t>(min_elem - from);
             } else {
                 size = q;
@@ -89,43 +124,6 @@ namespace sgt {
             }
             from = next_from;
             to = from + size;
-        }
-    }
-
-    template<typename T>
-    const T * SmartMinElem8(const T * from, const T * to,
-                            T * min_val) {
-        if constexpr (std::is_same<T, uint16_t>::value && kHasMinpos) {
-            __m128i vec = _mm_loadu_si128(reinterpret_cast<const __m128i *>(from));
-
-            size_t size = to - from;
-            if (size != 8) {
-                assert(size < 8);
-
-                static constexpr auto masks = []() {
-                    std::array<std::array<uint64_t, 2>, 8> arr{};
-                    arr[1][0] = UINT16_MAX;
-                    arr[2][0] = (arr[1][0] << 16) | UINT16_MAX;
-                    arr[3][0] = (arr[2][0] << 16) | UINT16_MAX;
-                    arr[4][0] = (arr[3][0] << 16) | UINT16_MAX;
-                    for (size_t i = 5; i < 8; ++i) { arr[i][0] = UINT64_MAX; }
-                    arr[5][1] = UINT16_MAX;
-                    arr[6][1] = (arr[5][1] << 16) | UINT16_MAX;
-                    arr[7][1] = (arr[6][1] << 16) | UINT16_MAX;
-                    for (size_t i = 0; i < 8; ++i) { arr[i] = {~arr[i][0], ~arr[i][1]}; }
-                    return arr;
-                }();
-
-                vec = _mm_or_si128(vec, _mm_loadu_si128(reinterpret_cast<const __m128i *>(&masks[size])));
-            }
-
-            vec = _mm_minpos_epu16(vec);
-            if (min_val != nullptr) { *min_val = static_cast<T>(_mm_extract_epi16(vec, 0)); }
-            return from + _mm_extract_epi8(vec, 2);
-        } else {
-            const T * min_it = std::min_element(from, to);
-            if (min_val != nullptr) { *min_val = *min_it; }
-            return min_it;
         }
     }
 
