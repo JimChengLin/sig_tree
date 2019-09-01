@@ -6,6 +6,7 @@
 
 #include "../src/sig_tree.h"
 #include "../src/sig_tree_impl.h"
+#include "../src/sig_tree_mop_impl.h"
 #include "../src/sig_tree_node_impl.h"
 #include "../src/sig_tree_rebuild_impl.h"
 #include "../src/sig_tree_visit_impl.h"
@@ -267,6 +268,23 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
         std::cout << "sig_tree_mem_pages: " << allocator.records_.size() << std::endl;
         std::cout << "std_set_cmp_times : " << std_set_cmp_times << std::endl;
 
+        {
+            TIME_START;
+            for (auto it = src.cbegin(); it != src.cend();) {
+                std::array<Slice, 8> ss;
+                ss[0] = reinterpret_cast<char *>(*it++);
+                ss[1] = it != src.cend() ? reinterpret_cast<char *>(*it++) : ss[0];
+                ss[2] = it != src.cend() ? reinterpret_cast<char *>(*it++) : ss[1];
+                ss[3] = it != src.cend() ? reinterpret_cast<char *>(*it++) : ss[2];
+                ss[4] = it != src.cend() ? reinterpret_cast<char *>(*it++) : ss[3];
+                ss[5] = it != src.cend() ? reinterpret_cast<char *>(*it++) : ss[4];
+                ss[6] = it != src.cend() ? reinterpret_cast<char *>(*it++) : ss[5];
+                ss[7] = it != src.cend() ? reinterpret_cast<char *>(*it++) : ss[6];
+                tree.MultiGetWithCallback<8>(ss.data());
+            }
+            TIME_END;
+            PRINT_TIME("SGT - MultiGet");
+        }
         {
             Helper helper_rebuild;
             AllocatorImpl allocator_rebuild;

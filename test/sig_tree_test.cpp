@@ -5,6 +5,7 @@
 
 #include "../src/sig_tree.h"
 #include "../src/sig_tree_impl.h"
+#include "../src/sig_tree_mop_impl.h"
 #include "../src/sig_tree_node_impl.h"
 #include "../src/sig_tree_rebuild_impl.h"
 #include "../src/sig_tree_visit_impl.h"
@@ -168,6 +169,20 @@ namespace sgt::sig_tree_test {
                 return v == (rep >> 32);
             });
             assert(it == set.cend());
+        }
+
+        for (auto it = set.cbegin(); it != set.cend();) {
+            uint32_t v0 = *it++;
+            uint32_t v1 = it != set.cend() ? *it++ : v0;
+
+            std::array<Slice, 2> ss;
+            ss[0] = {reinterpret_cast<char *>(&v0), sizeof(v0)};
+            ss[1] = {reinterpret_cast<char *>(&v1), sizeof(v1)};
+
+            tree.MultiGetWithCallback<2>(ss.data(), [&](const auto & reps) {
+                assert(v0 == (*reps[0] >> 32));
+                assert(v1 == (*reps[1] >> 32));
+            });
         }
 
         std::string out;

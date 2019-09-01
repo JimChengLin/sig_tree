@@ -15,6 +15,7 @@ add_executable(sig_tree main.cpp
         src/page_size.h
         src/sig_tree.h
         src/sig_tree_impl.h
+        src/sig_tree_mop_impl.h
         src/sig_tree_node_impl.h
         src/sig_tree_rebuild_impl.h
         src/sig_tree_visit_impl.h

@@ -3,7 +3,6 @@
 #define SIG_TREE_SIG_TREE_NODE_IMPL_H
 
 #if __has_include(<smmintrin.h>)
-
 #include <smmintrin.h>
 
 namespace sgt {
@@ -15,6 +14,7 @@ namespace sgt {
 }
 #endif
 
+#include "likely.h"
 #include "sig_tree.h"
 
 namespace sgt {
@@ -31,7 +31,7 @@ namespace sgt {
     }
 
     template<typename T>
-    const T * SmartMinElem8(const T * from, const T * to, T * min_val) {
+    inline const T * SmartMinElem8(const T * from, const T * to, T * min_val) {
         if constexpr (std::is_same<T, uint16_t>::value && kHasMinpos) {
             __m128i vec = _mm_loadu_si128(reinterpret_cast<const __m128i *>(from));
 
@@ -243,7 +243,7 @@ namespace sgt {
         size_t r = idxes_[i];
         if constexpr (PyramidHeight(kNodeRank) == 3) {
             assert(level < 3);
-            if (level == 2) {
+            if (SGT_LIKELY(level == 2)) {
                 index = index * 8 + r;
                 r = idxes_[kAbsOffsets[1] + index];
             }

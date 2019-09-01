@@ -79,6 +79,11 @@ namespace sgt {
         auto GetWithCallback(const Slice & k,
                              CALLBACK && callback = {} /* [](KV_REP * rep) { return rep; } */);
 
+        // auto(* callback)(std::array<KV_REP *, N> & reps)
+        template<size_t N, typename CALLBACK = std::false_type>
+        auto MultiGetWithCallback(const Slice * ks,
+                                  CALLBACK && callback = {} /* [](std::array<KV_REP *, N> & reps) { return reps; } */);
+
         size_t Size() const;
 
         size_t RootOffset() const { return kRootOffset; }
@@ -225,6 +230,9 @@ namespace sgt {
 
         static std::tuple<size_t /* idx */, bool /* direct */, size_t /* size */>
         FindBestMatch(const Node * node, const Slice & k);
+
+        static std::tuple<size_t /* idx */, bool /* direct */, size_t /* size */>
+        FindBestMatchImpl(const Node * node, const Slice & k);
 
         bool CombatInsert(const Slice & opponent, const Slice & k, KV_REP v,
                           Node * hint, size_t hint_idx, bool hint_direct);
