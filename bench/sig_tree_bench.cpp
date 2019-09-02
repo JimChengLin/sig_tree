@@ -271,7 +271,7 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
         {
             TIME_START;
             for (auto it = src.cbegin(); it != src.cend();) {
-                std::array<Slice, 8> ss;
+                std::array<Slice, 10> ss;
                 ss[0] = reinterpret_cast<char *>(*it++);
                 ss[1] = it != src.cend() ? reinterpret_cast<char *>(*it++) : ss[0];
                 ss[2] = it != src.cend() ? reinterpret_cast<char *>(*it++) : ss[1];
@@ -280,10 +280,20 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
                 ss[5] = it != src.cend() ? reinterpret_cast<char *>(*it++) : ss[4];
                 ss[6] = it != src.cend() ? reinterpret_cast<char *>(*it++) : ss[5];
                 ss[7] = it != src.cend() ? reinterpret_cast<char *>(*it++) : ss[6];
-                tree.MultiGetWithCallback<8>(ss.data());
+                ss[8] = it != src.cend() ? reinterpret_cast<char *>(*it++) : ss[7];
+                ss[9] = it != src.cend() ? reinterpret_cast<char *>(*it++) : ss[8];
+                tree.MultiGetWithCallback<10>(ss.data());
             }
             TIME_END;
-            PRINT_TIME("SGT - MultiGet");
+            PRINT_TIME("SGT - MultiGetWithCallback<10>");
+        }
+        {
+            TIME_START;
+            for (const auto & s:src) {
+                tree.GetWithCallback(reinterpret_cast<char *>(s));
+            }
+            TIME_END;
+            PRINT_TIME("SGT - GetWithCallback");
         }
         {
             Helper helper_rebuild;
