@@ -164,6 +164,8 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
 
     void Run() {
         auto seed = std::random_device()();
+        std::cout << "sig_tree_bench_seed: " << seed << std::endl;
+
         std::default_random_engine engine(seed);
         std::uniform_int_distribution<uint8_t> dist(1);
 
