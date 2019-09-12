@@ -2,7 +2,7 @@
 #ifndef SIG_TREE_SIG_TREE_NODE_IMPL_H
 #define SIG_TREE_SIG_TREE_NODE_IMPL_H
 
-#if __has_include(<smmintrin.h>)
+#if __has_include(<smmintrin.h>) && defined(__SSE4_1__)
 #include <smmintrin.h>
 
 namespace sgt {
