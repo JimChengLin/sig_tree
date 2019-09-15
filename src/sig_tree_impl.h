@@ -225,16 +225,15 @@ namespace sgt {
         uint8_t diff_b;
         unsigned int diff_m;
         unsigned int diff_n;
+        typename Node::Pyramid pyramid;
+        const K_DIFF * base;
+        K_DIFF base_val;
 
         const K_DIFF * cbegin = node->diffs_.cbegin();
         const K_DIFF * cend = &node->diffs_[size - 1];
 
         K_DIFF min_val;
-        typename Node::Pyramid pyramid;
         const K_DIFF * min_it = cbegin + node->pyramid_.MinAt(cbegin, cend, &min_val);
-
-        const K_DIFF * base = min_it;
-        const K_DIFF base_val = min_val;
 
         K_DIFF diff_at;
         uint8_t shift;
@@ -292,11 +291,12 @@ namespace sgt {
             pyramid = node->pyramid_;
 
             if (entry_as_ui != 0) {
-                assert(entry_as_ar[0] == 1 && entry_as_ar[1] == 0);
                 goto search_skip;
             }
             diff_a = 1;
             diff_b = 0;
+            base = min_it;
+            base_val = min_val;
             if (!direct) {
                 goto build_cache_left;
             } else {
