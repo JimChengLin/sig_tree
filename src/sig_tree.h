@@ -199,7 +199,9 @@ namespace sgt {
             std::array<KV_REP, RANK + 1> reps_;
             std::array<K_DIFF, RANK> diffs_;
             uint32_t size_ = 0;
+#ifndef SGT_NO_DENSE_INPUT_CACHE
             Cache cache_;
+#endif
             Pyramid pyramid_;
         };
 

@@ -7,7 +7,6 @@
 #endif
 
 #include <algorithm>
-#include <endian.h>
 
 #include "coding.h"
 #include "likely.h"
@@ -221,6 +220,7 @@ namespace sgt {
             return {0, false, size};
         }
 
+#ifndef SGT_NO_DENSE_INPUT_CACHE
         uint8_t diff_a;
         uint8_t diff_b;
         unsigned int diff_m;
@@ -262,7 +262,6 @@ namespace sgt {
         auto & entry_as_ar = entry.as_uint8_array;
         auto & entry_as_ui = entry.as_uint16;
 
-        static_assert(__BYTE_ORDER == __LITTLE_ENDIAN);
         if (entry_as_ui > 1) {
             const K_DIFF * cb;
             const K_DIFF * ce;
@@ -423,6 +422,40 @@ namespace sgt {
                 goto search;
             }
         }
+#else
+        const K_DIFF * cbegin = node->diffs_.cbegin();
+        const K_DIFF * cend = &node->diffs_[size - 1];
+
+        K_DIFF min_val;
+        auto pyramid = node->pyramid_;
+        const K_DIFF * min_it = cbegin + pyramid.MinAt(cbegin, cend, &min_val);
+        while (true) {
+            assert(min_it == std::min_element(cbegin, cend) && *min_it == min_val);
+            K_DIFF diff_at;
+            uint8_t shift;
+            std::tie(diff_at, shift) = UnpackDiffAtAndShift(min_val);
+            uint8_t mask = ~(static_cast<uint8_t>(1) << shift);
+
+            // left or right?
+            uint8_t crit_byte = k.size() > diff_at
+                                ? CharToUint8(k[diff_at])
+                                : static_cast<uint8_t>(0);
+            auto direct = static_cast<bool>((1 + (crit_byte | mask)) >> 8);
+            if (!direct) { // go left
+                cend = min_it;
+                if (cbegin == cend) {
+                    return {min_it - node->diffs_.cbegin(), direct, size};
+                }
+                min_it = node->diffs_.cbegin() + pyramid.TrimRight(node->diffs_.cbegin(), cbegin, cend, &min_val);
+            } else { // go right
+                cbegin = min_it + 1;
+                if (cbegin == cend) {
+                    return {min_it - node->diffs_.cbegin(), direct, size};
+                }
+                min_it = node->diffs_.cbegin() + pyramid.TrimLeft(node->diffs_.cbegin(), cbegin, cend, &min_val);
+            }
+        }
+#endif
     }
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
@@ -784,7 +817,9 @@ namespace sgt {
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     void SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     NodeBuild(Node * node, size_t rebuild_idx) {
+#ifndef SGT_NO_DENSE_INPUT_CACHE
         node->cache_ = {};
+#endif
         node->pyramid_.Build(node->diffs_.data(), node->diffs_.data() + NodeSize(node) - 1, rebuild_idx);
     }
 
