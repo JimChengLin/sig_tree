@@ -259,8 +259,8 @@ namespace sgt {
 
         bool direct = (pos >> 3);
         auto & entry = const_cast<typename Node::Cache &>(node->cache_)[pos];
-        auto & entry_as_ar = entry.as_uint8_array;
-        auto & entry_as_ui = entry.as_uint16;
+#define entry_as_ar entry.as_uint8_array
+#define entry_as_ui entry.as_uint16
 
         if (entry_as_ui > 1) {
             const K_DIFF * cb;
@@ -278,11 +278,11 @@ namespace sgt {
                 min_val = *min_it;
             } else {
                 pyramid = node->pyramid_;
-                if (ce != cend) {
-                    min_it = node->diffs_.cbegin() + pyramid.TrimRight(node->diffs_.cbegin(), cb, ce, &min_val);
-                }
                 if (cb != cbegin) {
                     min_it = node->diffs_.cbegin() + pyramid.TrimLeft(node->diffs_.cbegin(), cb, ce, &min_val);
+                }
+                if (ce != cend) {
+                    min_it = node->diffs_.cbegin() + pyramid.TrimRight(node->diffs_.cbegin(), cb, ce, &min_val);
                 }
             }
 
@@ -422,6 +422,8 @@ namespace sgt {
                 goto search;
             }
         }
+#undef entry_as_ar
+#undef entry_as_ui
 #else
         const K_DIFF * cbegin = node->diffs_.cbegin();
         const K_DIFF * cend = &node->diffs_[size - 1];
