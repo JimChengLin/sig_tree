@@ -190,9 +190,16 @@ namespace sgt {
                 size_t CalcOffset(size_t level, size_t index, K_DIFF * min_val) const;
             };
 
+            union CacheEntry {
+                std::array<uint8_t, 2> as_uint8_array;
+                uint16_t as_uint16;
+            };
+            typedef std::array<CacheEntry, 16> Cache;
+
             std::array<KV_REP, RANK + 1> reps_;
             std::array<K_DIFF, RANK> diffs_;
             uint32_t size_ = 0;
+            Cache cache_;
             Pyramid pyramid_;
         };
 

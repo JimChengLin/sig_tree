@@ -7,6 +7,7 @@
 #endif
 
 #include <algorithm>
+#include <endian.h>
 
 #include "coding.h"
 #include "likely.h"
@@ -220,24 +221,102 @@ namespace sgt {
             return {0, false, size};
         }
 
+        uint8_t diff_a;
+        uint8_t diff_b;
+        unsigned int diff_m;
+        unsigned int diff_n;
+
         const K_DIFF * cbegin = node->diffs_.cbegin();
         const K_DIFF * cend = &node->diffs_[size - 1];
 
         K_DIFF min_val;
-        auto pyramid = node->pyramid_;
-        const K_DIFF * min_it = cbegin + pyramid.MinAt(cbegin, cend, &min_val);
+        typename Node::Pyramid pyramid;
+        const K_DIFF * min_it = cbegin + node->pyramid_.MinAt(cbegin, cend, &min_val);
+
+        const K_DIFF * base = min_it;
+        const K_DIFF base_val = min_val;
+
+        K_DIFF diff_at;
+        uint8_t shift;
+        std::tie(diff_at, shift) = UnpackDiffAtAndShift(min_val);
+
+        uint8_t crit_byte = k.size() > diff_at
+                            ? CharToUint8(k[diff_at])
+                            : static_cast<uint8_t>(0);
+        uint8_t mask = ((1 << (shift + 1)) - 1);
+
+        unsigned int pos = crit_byte & mask;
+        if (shift < 3) {
+            ++diff_at;
+            uint8_t remaining = 3 - shift;
+            pos <<= remaining;
+            pos |= ((k.size() > diff_at
+                     ? CharToUint8(k[diff_at])
+                     : static_cast<uint8_t>(0)) >> (8 - remaining));
+        } else if (shift > 3) {
+            pos >>= (shift - 3);
+        }
+
+        bool direct = (pos >> 3);
+        auto & entry = const_cast<typename Node::Cache &>(node->cache_)[pos];
+        auto & entry_as_ar = entry.as_uint8_array;
+        auto & entry_as_ui = entry.as_uint16;
+
+        static_assert(__BYTE_ORDER == __LITTLE_ENDIAN);
+        if (entry_as_ui > 1) {
+            const K_DIFF * cb;
+            const K_DIFF * ce;
+            if (!direct) { // left
+                ce = min_it - entry_as_ar[0];
+                cb = ce - entry_as_ar[1];
+            } else { // right
+                cb = min_it + entry_as_ar[0];
+                ce = cb + entry_as_ar[1];
+            }
+
+            if (entry_as_ar[1] <= 9) {
+                min_it = std::min_element(cb, ce);
+                min_val = *min_it;
+            } else {
+                pyramid = node->pyramid_;
+                if (ce != cend) {
+                    min_it = node->diffs_.cbegin() + pyramid.TrimRight(node->diffs_.cbegin(), cb, ce, &min_val);
+                }
+                if (cb != cbegin) {
+                    min_it = node->diffs_.cbegin() + pyramid.TrimLeft(node->diffs_.cbegin(), cb, ce, &min_val);
+                }
+            }
+
+            cbegin = cb;
+            cend = ce;
+        } else {
+            pyramid = node->pyramid_;
+
+            if (entry_as_ui != 0) {
+                assert(entry_as_ar[0] == 1 && entry_as_ar[1] == 0);
+                goto search_skip;
+            }
+            diff_a = 1;
+            diff_b = 0;
+            if (!direct) {
+                goto build_cache_left;
+            } else {
+                goto build_cache_right;
+            }
+        }
+
         while (true) {
+            search:
             assert(min_it == std::min_element(cbegin, cend) && *min_it == min_val);
-            K_DIFF diff_at;
-            uint8_t shift;
             std::tie(diff_at, shift) = UnpackDiffAtAndShift(min_val);
-            uint8_t mask = ~(static_cast<uint8_t>(1) << shift);
 
             // left or right?
-            uint8_t crit_byte = k.size() > diff_at
-                                ? CharToUint8(k[diff_at])
-                                : static_cast<uint8_t>(0);
-            auto direct = static_cast<bool>((1 + (crit_byte | mask)) >> 8);
+            crit_byte = k.size() > diff_at
+                        ? CharToUint8(k[diff_at])
+                        : static_cast<uint8_t>(0);
+            mask = ~(static_cast<uint8_t>(1) << shift);
+            direct = static_cast<bool>((1 + (crit_byte | mask)) >> 8);
+            search_skip:
             if (!direct) { // go left
                 cend = min_it;
                 if (cbegin == cend) {
@@ -250,6 +329,98 @@ namespace sgt {
                     return {min_it - node->diffs_.cbegin(), direct, size};
                 }
                 min_it = node->diffs_.cbegin() + pyramid.TrimLeft(node->diffs_.cbegin(), cbegin, cend, &min_val);
+            }
+        }
+
+        while (true) {
+            assert(min_it == std::min_element(cbegin, cend) && *min_it == min_val);
+            std::tie(diff_at, shift) = UnpackDiffAtAndShift(min_val);
+
+            // left or right?
+            crit_byte = k.size() > diff_at
+                        ? CharToUint8(k[diff_at])
+                        : static_cast<uint8_t>(0);
+            mask = ~(static_cast<uint8_t>(1) << shift);
+            direct = static_cast<bool>((1 + (crit_byte | mask)) >> 8);
+            if (!direct) { // go left
+                build_cache_left:
+                cend = min_it;
+                if (cbegin == cend) {
+                    if ((diff_m = static_cast<unsigned int>(base - (cend + 1) /* can be negative */)) <= UINT8_MAX) {
+                        diff_a = diff_m;
+                        diff_b = 1;
+                    }
+                    entry_as_ar = {diff_a, diff_b};
+                    return {min_it - node->diffs_.cbegin(), direct, size};
+                }
+                min_it = node->diffs_.cbegin() + pyramid.TrimRight(node->diffs_.cbegin(), cbegin, cend, &min_val);
+            } else { // go right
+                cbegin = min_it + 1;
+                if (cbegin == cend) {
+                    if ((diff_m = static_cast<unsigned int>(base - cend)) <= UINT8_MAX) {
+                        diff_a = diff_m;
+                        diff_b = 1;
+                    }
+                    entry_as_ar = {diff_a, diff_b};
+                    return {min_it - node->diffs_.cbegin(), direct, size};
+                }
+                min_it = node->diffs_.cbegin() + pyramid.TrimLeft(node->diffs_.cbegin(), cbegin, cend, &min_val);
+            }
+
+            if ((diff_m = static_cast<unsigned int>(base - cend)) <= UINT8_MAX &&
+                (diff_n = cend - cbegin) <= UINT8_MAX) {
+                diff_a = diff_m;
+                diff_b = diff_n;
+            }
+            if (min_val - base_val >= 4) {
+                entry_as_ar = {diff_a, diff_b};
+                goto search;
+            }
+        }
+
+        while (true) {
+            assert(min_it == std::min_element(cbegin, cend) && *min_it == min_val);
+            std::tie(diff_at, shift) = UnpackDiffAtAndShift(min_val);
+
+            // left or right?
+            crit_byte = k.size() > diff_at
+                        ? CharToUint8(k[diff_at])
+                        : static_cast<uint8_t>(0);
+            mask = ~(static_cast<uint8_t>(1) << shift);
+            direct = static_cast<bool>((1 + (crit_byte | mask)) >> 8);
+            if (!direct) { // go left
+                cend = min_it;
+                if (cbegin == cend) {
+                    if ((diff_m = static_cast<unsigned int>(cbegin - base)) <= UINT8_MAX) {
+                        diff_a = diff_m;
+                        diff_b = 1;
+                    }
+                    entry_as_ar = {diff_a, diff_b};
+                    return {min_it - node->diffs_.cbegin(), direct, size};
+                }
+                min_it = node->diffs_.cbegin() + pyramid.TrimRight(node->diffs_.cbegin(), cbegin, cend, &min_val);
+            } else { // go right
+                build_cache_right:
+                cbegin = min_it + 1;
+                if (cbegin == cend) {
+                    if ((diff_m = static_cast<unsigned int>(min_it /* cbegin - 1 */ - base)) <= UINT8_MAX) {
+                        diff_a = diff_m;
+                        diff_b = 1;
+                    }
+                    entry_as_ar = {diff_a, diff_b};
+                    return {min_it - node->diffs_.cbegin(), direct, size};
+                }
+                min_it = node->diffs_.cbegin() + pyramid.TrimLeft(node->diffs_.cbegin(), cbegin, cend, &min_val);
+            }
+
+            if ((diff_m = static_cast<unsigned int>(cbegin - base)) <= UINT8_MAX &&
+                (diff_n = cend - cbegin) <= UINT8_MAX) {
+                diff_a = diff_m;
+                diff_b = diff_n;
+            }
+            if (min_val - base_val >= 4) {
+                entry_as_ar = {diff_a, diff_b};
+                goto search;
             }
         }
     }
@@ -613,6 +784,7 @@ namespace sgt {
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     void SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     NodeBuild(Node * node, size_t rebuild_idx) {
+        node->cache_ = {};
         node->pyramid_.Build(node->diffs_.data(), node->diffs_.data() + NodeSize(node) - 1, rebuild_idx);
     }
 
