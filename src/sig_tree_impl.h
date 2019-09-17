@@ -13,6 +13,9 @@
 #include "sig_tree.h"
 
 namespace sgt {
+    template<typename T>
+    inline const T * SmartMinElem8(const T * from, const T * to, T * min_val);
+
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     SignatureTreeTpl(Helper * helper, Allocator * allocator)
@@ -272,9 +275,16 @@ namespace sgt {
                 ce = cb + entry_as_ar[1];
             }
 
-            if (entry_as_ar[1] <= 9) {
-                min_it = std::min_element(cb, ce);
-                min_val = *min_it;
+            if (entry_as_ar[1] == 9) {
+                const auto it = &cb[8];
+                const auto val = cb[8];
+                min_it = SmartMinElem8(cb, it, &min_val);
+                if (min_val > val) {
+                    min_val = val;
+                    min_it = it;
+                }
+            } else if (entry_as_ar[1] <= 8) {
+                min_it = SmartMinElem8(cb, ce, &min_val);
             } else {
                 pyramid = node->pyramid_;
                 if (cb != cbegin) {
