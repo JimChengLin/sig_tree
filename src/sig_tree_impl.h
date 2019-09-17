@@ -289,7 +289,7 @@ namespace sgt {
             cend = ce;
         } else if (auto it = min_it + direct;
                 it == cbegin || // !direct && min_it - direct == cbegin
-                it == cend) { //    direct && min_it + direct == cend
+                it == cend) {   //  direct && min_it + direct == cend
             return {min_it - node->diffs_.cbegin(), direct, size};
         } else {
             pyramid = node->pyramid_;

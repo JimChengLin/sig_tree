@@ -52,7 +52,7 @@ namespace sgt {
             virtual KV_TRANS Trans(const KV_REP & rep) const = 0;
         };
 
-    private:
+    protected:
         Helper * const helper_;
         Allocator * const allocator_;
         void * base_;
@@ -115,7 +115,7 @@ namespace sgt {
 
         void Rebuild(SignatureTreeTpl * dst) const;
 
-    private:
+    protected:
         enum {
             kPyramidBrickLength = 8
         };
@@ -232,7 +232,7 @@ namespace sgt {
             std::vector<KV_REP> reps;
         };
 
-    private:
+    protected:
         Node * OffsetToMemNode(size_t offset) const {
             return reinterpret_cast<Node *>(reinterpret_cast<uintptr_t>(base_) + offset);
         }
@@ -291,7 +291,7 @@ namespace sgt {
         template<typename T, bool BACKWARD, typename VISITOR, typename E>
         static void VisitGenericImpl(T self, const Slice & target, VISITOR && visitor, E && expected);
 
-    private:
+    protected:
         inline KV_REP Pack(size_t offset) const {
             if constexpr (has_pack<KV_TRANS>::value) {
                 return KV_TRANS::Pack(offset);
