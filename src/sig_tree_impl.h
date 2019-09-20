@@ -245,9 +245,7 @@ namespace sgt {
         uint8_t crit_byte = k.size() > diff_at
                             ? CharToUint8(k[diff_at])
                             : static_cast<uint8_t>(0);
-        uint8_t mask = ((1 << (shift + 1)) - 1);
-
-        unsigned int pos = crit_byte & mask;
+        unsigned int pos = (crit_byte & ((1 << (shift + 1)) - 1));
         if (shift < 3) {
             ++diff_at;
             uint8_t remaining = 3 - shift;
@@ -259,7 +257,7 @@ namespace sgt {
             pos >>= (shift - 3);
         }
 
-        bool direct = (pos >> 3);
+        auto direct = (pos >> 3);
         auto & entry = const_cast<typename Node::Cache &>(node->cache_)[pos];
 #define entry_as_ar entry.as_uint8_array
 #define entry_as_ui entry.as_uint16
@@ -327,8 +325,7 @@ namespace sgt {
             crit_byte = k.size() > diff_at
                         ? CharToUint8(k[diff_at])
                         : static_cast<uint8_t>(0);
-            mask = ~(static_cast<uint8_t>(1) << shift);
-            direct = static_cast<bool>((1 + (crit_byte | mask)) >> 8);
+            direct = ((crit_byte >> shift) & 1);
             search_skip:
             if (!direct) { // go left
                 cend = min_it;
@@ -353,8 +350,7 @@ namespace sgt {
             crit_byte = k.size() > diff_at
                         ? CharToUint8(k[diff_at])
                         : static_cast<uint8_t>(0);
-            mask = ~(static_cast<uint8_t>(1) << shift);
-            direct = static_cast<bool>((1 + (crit_byte | mask)) >> 8);
+            direct = ((crit_byte >> shift) & 1);
             if (!direct) { // go left
                 build_cache_left:
                 cend = min_it;
@@ -399,8 +395,7 @@ namespace sgt {
             crit_byte = k.size() > diff_at
                         ? CharToUint8(k[diff_at])
                         : static_cast<uint8_t>(0);
-            mask = ~(static_cast<uint8_t>(1) << shift);
-            direct = static_cast<bool>((1 + (crit_byte | mask)) >> 8);
+            direct = ((crit_byte >> shift) & 1);
             if (!direct) { // go left
                 cend = min_it;
                 if (cbegin == cend) {
@@ -450,13 +445,12 @@ namespace sgt {
             K_DIFF diff_at;
             uint8_t shift;
             std::tie(diff_at, shift) = UnpackDiffAtAndShift(min_val);
-            uint8_t mask = ~(static_cast<uint8_t>(1) << shift);
 
             // left or right?
             uint8_t crit_byte = k.size() > diff_at
                                 ? CharToUint8(k[diff_at])
                                 : static_cast<uint8_t>(0);
-            auto direct = static_cast<bool>((1 + (crit_byte | mask)) >> 8);
+            auto direct = ((crit_byte >> shift) & 1);
             if (!direct) { // go left
                 cend = min_it;
                 if (cbegin == cend) {
@@ -486,8 +480,7 @@ namespace sgt {
         // __builtin_clz: returns the number of leading 0-bits in x, starting at the most significant bit position
         // if x is 0, the result is undefined
         uint8_t shift = (__builtin_clz(CharToUint8(opponent[diff_at] ^ k[diff_at])) ^ 31);
-        uint8_t mask = ~(static_cast<uint8_t>(1) << shift);
-        auto direct = static_cast<bool>((1 + (CharToUint8(k[diff_at]) | mask)) >> 8);
+        auto direct = ((CharToUint8(k[diff_at]) >> shift) & 1);
 
         K_DIFF packed_diff = PackDiffAtAndShift(diff_at, shift);
         Node * cursor = hint;
@@ -532,12 +525,11 @@ namespace sgt {
                     K_DIFF crit_diff_at;
                     uint8_t crit_shift;
                     std::tie(crit_diff_at, crit_shift) = UnpackDiffAtAndShift(exist_diff);
-                    uint8_t crit_mask = ~(static_cast<uint8_t>(1) << crit_shift);
 
                     uint8_t crit_byte = k.size() > crit_diff_at
                                         ? CharToUint8(k[crit_diff_at])
                                         : static_cast<uint8_t>(0);
-                    auto crit_direct = static_cast<bool>((1 + (crit_byte | crit_mask)) >> 8);
+                    auto crit_direct = ((crit_byte >> crit_shift) & 1);
                     if (!crit_direct) {
                         cend = min_it;
                         if (cbegin == cend) {

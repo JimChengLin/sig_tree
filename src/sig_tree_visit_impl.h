@@ -111,8 +111,7 @@ namespace sgt {
                             // __builtin_clz: returns the number of leading 0-bits in x, starting at the most significant bit position
                             // if x is 0, the result is undefined
                             uint8_t shift = (__builtin_clz(CharToUint8(opponent[diff_at] ^ k[diff_at])) ^ 31);
-                            uint8_t mask = ~(static_cast<uint8_t>(1) << shift);
-                            auto direct = static_cast<bool>((1 + (CharToUint8(k[diff_at]) | mask)) >> 8);
+                            auto direct = ((CharToUint8(k[diff_at]) >> shift) & 1);
 
                             K_DIFF packed_diff = PackDiffAtAndShift(diff_at, shift);
                             Node * cursor = hint;
@@ -158,12 +157,11 @@ namespace sgt {
                                         K_DIFF crit_diff_at;
                                         uint8_t crit_shift;
                                         std::tie(crit_diff_at, crit_shift) = UnpackDiffAtAndShift(exist_diff);
-                                        uint8_t crit_mask = ~(static_cast<uint8_t>(1) << crit_shift);
 
                                         uint8_t crit_byte = k.size() > crit_diff_at
                                                             ? CharToUint8(k[crit_diff_at])
                                                             : static_cast<uint8_t>(0);
-                                        auto crit_direct = static_cast<bool>((1 + (crit_byte | crit_mask)) >> 8);
+                                        auto crit_direct = ((crit_byte >> crit_shift) & 1);
                                         if (!crit_direct) {
                                             cend = min_it;
                                             if (cbegin == cend) {

@@ -280,12 +280,12 @@ namespace sgt {
         static bool IsNodeFull(const Node * node);
 
         static K_DIFF PackDiffAtAndShift(K_DIFF diff_at, uint8_t shift) {
-            return (diff_at << 3) | ((~shift) & 0b111);
+            return (diff_at << 3) | (7 - shift);
         }
 
         static std::pair<K_DIFF, uint8_t>
         UnpackDiffAtAndShift(K_DIFF packed_diff) {
-            return {packed_diff >> 3, (~packed_diff) & 0b111};
+            return {packed_diff >> 3, 7 - (packed_diff & 0b111)};
         }
 
         template<typename T, bool BACKWARD, typename VISITOR, typename E>

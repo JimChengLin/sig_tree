@@ -201,12 +201,9 @@ namespace sgt {
         bool accumulator = true;
         size_t level = 0;
         do {
-            size_t q = end_pos / 8;
-            size_t r = end_pos % 8;
-            if (r == 0) {
-                --q;
-                r = 8;
-            }
+            --end_pos;
+            const size_t q = end_pos / 8;
+            const size_t r = end_pos % 8 + 1;
             pos /= 8;
             end_pos = q + 1;
 
