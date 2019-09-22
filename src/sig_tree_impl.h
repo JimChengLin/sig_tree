@@ -479,7 +479,7 @@ namespace sgt {
 
         // __builtin_clz: returns the number of leading 0-bits in x, starting at the most significant bit position
         // if x is 0, the result is undefined
-        uint8_t shift = (__builtin_clz(CharToUint8(opponent[diff_at] ^ k[diff_at])) ^ 31);
+        uint8_t shift = (__builtin_clz(CharToUint8(opponent[diff_at] ^ k[diff_at])) ^ 31); // bsr
         auto direct = ((CharToUint8(k[diff_at]) >> shift) & 1);
 
         K_DIFF packed_diff = PackDiffAtAndShift(diff_at, shift);

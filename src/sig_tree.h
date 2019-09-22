@@ -285,7 +285,7 @@ namespace sgt {
 
         static std::pair<K_DIFF, uint8_t>
         UnpackDiffAtAndShift(K_DIFF packed_diff) {
-            return {packed_diff >> 3, 7 - (packed_diff & 0b111)};
+            return {packed_diff >> 3, (~packed_diff) & 0b111 /* 7 - (packed_diff & 0b111) */};
         }
 
         template<typename T, bool BACKWARD, typename VISITOR, typename E>
@@ -320,9 +320,11 @@ namespace sgt {
         enum {
             kNodeRank = NodeRank<>::value,
             kNodeRepRank = kNodeRank + 1,
-            kMaxKeyLength = std::numeric_limits<K_DIFF>::max() >> 3,
             kForward = false,
-            kBackward = true
+            kBackward = true,
+            kMajorVersion = 1,
+            kMinorVersion = 2,
+            kMaxKeyLength = std::numeric_limits<K_DIFF>::max() >> 3
         };
 
         static_assert(PyramidHeight(kNodeRank) == CalcPyramidHeight(kNodeRank));
