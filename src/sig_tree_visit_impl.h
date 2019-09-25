@@ -144,11 +144,7 @@ namespace sgt {
                                                 que.clear();
                                                 goto restart;
                                             }
-                                            if (!direct) {
-                                                insert_idx = cbegin - cursor->diffs_.cbegin();
-                                            } else {
-                                                insert_idx = cend - cursor->diffs_.cbegin() - 1;
-                                            }
+                                            insert_idx = (!direct ? cbegin : (cend - 1)) - cursor->diffs_.cbegin();
                                             insert_direct = direct;
                                             break;
                                         }

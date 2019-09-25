@@ -512,11 +512,7 @@ namespace sgt {
                             cursor = OffsetToMemNode(kRootOffset);
                             goto restart;
                         }
-                        if (!direct) {
-                            insert_idx = cbegin - cursor->diffs_.cbegin();
-                        } else {
-                            insert_idx = cend - cursor->diffs_.cbegin() - 1;
-                        }
+                        insert_idx = (!direct ? cbegin : (cend - 1)) - cursor->diffs_.cbegin();
                         insert_direct = direct;
                         break;
                     }
@@ -669,14 +665,14 @@ namespace sgt {
             assert(min_it == std::min_element(cbegin, cend));
             if (min_it - cbegin <= cend - min_it) { // go right
                 cbegin = min_it + 1;
-                if (static_cast<size_t>(cend - cbegin) <= parent->diffs_.size() / 2) {
+                if (static_cast<size_t>(cend - cbegin) < parent->diffs_.size() / 2) {
                     break;
                 }
                 min_it = parent->diffs_.cbegin() +
                          pyramid.TrimLeft(parent->diffs_.cbegin(), cbegin, cend);
             } else { // go left
                 cend = min_it;
-                if (static_cast<size_t>(cend - cbegin) <= parent->diffs_.size() / 2) {
+                if (static_cast<size_t>(cend - cbegin) < parent->diffs_.size() / 2) {
                     break;
                 }
                 min_it = parent->diffs_.cbegin() +
@@ -811,13 +807,10 @@ namespace sgt {
     void SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     NodeRemove(Node * node, size_t idx, bool direct, size_t size) {
         assert(size >= 1);
+        --node->size_;
+        del_gap(node->reps_, idx + direct, size);
         if (SGT_LIKELY(size > 1)) {
             del_gap(node->diffs_, idx, size - 1);
-        }
-        del_gap(node->reps_, idx + direct, size);
-
-        --node->size_;
-        if (SGT_LIKELY(NodeSize(node) > 1)) {
             NodeBuild(node, idx);
         }
     }
