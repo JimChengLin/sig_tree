@@ -232,12 +232,6 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
             PRINT_TIME("std::unordered_set - emplace");
         }
         // Add - 结束
-        {
-            TIME_START;
-            tree.Compact();
-            TIME_END;
-            PRINT_TIME("SGT - Compact");
-        }
         // Get - 开始
         {
             TIME_START;
@@ -270,6 +264,12 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
         std::cout << "sig_tree_mem_pages: " << allocator.records_.size() << std::endl;
         std::cout << "std_set_cmp_times : " << std_set_cmp_times << std::endl;
 
+        {
+            TIME_START;
+            tree.Compact();
+            TIME_END;
+            PRINT_TIME("SGT - Compact");
+        }
         {
             TIME_START;
             for (auto it = src.cbegin(); it != src.cend();) {
