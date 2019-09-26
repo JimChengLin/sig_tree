@@ -1,7 +1,7 @@
 # sig_tree
 Read ./bench/sig_tree_bench.cpp
 
-1M 16B Keys Benchmark
+1M 16B Keys Only Benchmark
 ```
 SGT - Add took 941 milliseconds
 std::set - emplace took 1027 milliseconds

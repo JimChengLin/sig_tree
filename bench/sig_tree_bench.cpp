@@ -169,7 +169,7 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
         std::default_random_engine engine(seed);
         std::uniform_int_distribution<uint8_t> dist(1);
 
-        // 随机生成 100W 16Bytes C 式字符串
+        // 随机生成 1M 16B C 式字符串
         std::vector<uint8_t *> src(1000000);
         for (auto & s:src) {
             s = static_cast<uint8_t *>(malloc(16));
