@@ -359,7 +359,7 @@ namespace sgt {
                         diff_a = diff_m;
                         diff_b = 1;
                     }
-                    entry_as_ar = {diff_a, diff_b};
+                    entry_as_ui = typename Node::CacheEntry{{diff_a, diff_b}}.as_uint16;
                     return {min_it - node->diffs_.cbegin(), direct, size};
                 }
                 min_it = node->diffs_.cbegin() + pyramid.TrimRight(node->diffs_.cbegin(), cbegin, cend, &min_val);
@@ -370,7 +370,7 @@ namespace sgt {
                         diff_a = diff_m;
                         diff_b = 1;
                     }
-                    entry_as_ar = {diff_a, diff_b};
+                    entry_as_ui = typename Node::CacheEntry{{diff_a, diff_b}}.as_uint16;
                     return {min_it - node->diffs_.cbegin(), direct, size};
                 }
                 min_it = node->diffs_.cbegin() + pyramid.TrimLeft(node->diffs_.cbegin(), cbegin, cend, &min_val);
@@ -382,7 +382,7 @@ namespace sgt {
                 diff_b = diff_n;
             }
             if (min_val - base_val >= 4) {
-                entry_as_ar = {diff_a, diff_b};
+                entry_as_ui = typename Node::CacheEntry{{diff_a, diff_b}}.as_uint16;
                 goto search;
             }
         }
@@ -403,7 +403,7 @@ namespace sgt {
                         diff_a = diff_m;
                         diff_b = 1;
                     }
-                    entry_as_ar = {diff_a, diff_b};
+                    entry_as_ui = typename Node::CacheEntry{{diff_a, diff_b}}.as_uint16;
                     return {min_it - node->diffs_.cbegin(), direct, size};
                 }
                 min_it = node->diffs_.cbegin() + pyramid.TrimRight(node->diffs_.cbegin(), cbegin, cend, &min_val);
@@ -415,7 +415,7 @@ namespace sgt {
                         diff_a = diff_m;
                         diff_b = 1;
                     }
-                    entry_as_ar = {diff_a, diff_b};
+                    entry_as_ui = typename Node::CacheEntry{{diff_a, diff_b}}.as_uint16;
                     return {min_it - node->diffs_.cbegin(), direct, size};
                 }
                 min_it = node->diffs_.cbegin() + pyramid.TrimLeft(node->diffs_.cbegin(), cbegin, cend, &min_val);
@@ -427,7 +427,7 @@ namespace sgt {
                 diff_b = diff_n;
             }
             if (min_val - base_val >= 4) {
-                entry_as_ar = {diff_a, diff_b};
+                entry_as_ui = typename Node::CacheEntry{{diff_a, diff_b}}.as_uint16;
                 goto search;
             }
         }
