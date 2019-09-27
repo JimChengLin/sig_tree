@@ -58,19 +58,11 @@ namespace sgt {
         std::string ToString() const { return {data_, size_}; }
     };
 
-    inline int SliceCmp(const Slice & a, const Slice & b) {
-        int r = memcmp(a.data(), b.data(), std::min(a.size(), b.size()));
-        if (r == 0) {
-            r -= static_cast<int>(static_cast<ssize_t>(b.size()) - static_cast<ssize_t>(a.size()));
-        }
-        return r;
-    }
-
     struct SliceComparator {
         using is_transparent = std::true_type;
 
         bool operator()(Slice a, Slice b) const {
-            return SliceCmp(a, b) < 0;
+            return a.ToStringView() < b.ToStringView();
         }
     };
 

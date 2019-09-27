@@ -439,7 +439,7 @@ namespace sgt {
 
         K_DIFF min_val;
         auto pyramid = node->pyramid_;
-        const K_DIFF * min_it = cbegin + pyramid.MinAt(cbegin, cend, &min_val);
+        const K_DIFF * min_it = cbegin + node->pyramid_.MinAt(cbegin, cend, &min_val);
         while (true) {
             assert(min_it == std::min_element(cbegin, cend) && *min_it == min_val);
             K_DIFF diff_at;
