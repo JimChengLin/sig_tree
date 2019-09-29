@@ -31,7 +31,7 @@ namespace sgt {
 
         K_DIFF min_val;
         auto pyramid = node->pyramid_;
-        const K_DIFF * min_it = cbegin + pyramid.MinAt(cbegin, cend, &min_val);
+        const K_DIFF * min_it = cbegin + node->pyramid_.MinAt(cbegin, cend, &min_val);
 
         Page l = RebuildInternalNode(node, cbegin, cend, min_it, pyramid, false, dst, pool);
         Page r = RebuildInternalNode(node, cbegin, cend, min_it, pyramid, true, dst, pool);

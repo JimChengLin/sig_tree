@@ -134,7 +134,7 @@ namespace sgt {
 
                                     K_DIFF exist_diff;
                                     auto pyramid = cursor->pyramid_;
-                                    const K_DIFF * min_it = cbegin + pyramid.MinAt(cbegin, cend, &exist_diff);
+                                    const K_DIFF * min_it = cbegin + cursor->pyramid_.MinAt(cbegin, cend, &exist_diff);
                                     while (true) {
                                         assert(min_it == std::min_element(cbegin, cend) && *min_it == exist_diff);
                                         if (exist_diff > packed_diff) {
