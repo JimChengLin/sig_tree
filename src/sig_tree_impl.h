@@ -604,11 +604,13 @@ namespace sgt {
                         size_t range = j - i;
                         if (child_size + range <= child->reps_.size()) { // move to the tail
                             size_t child_diff_size = child_size - 1;
+                            j = i + 1;
+
                             cpy_part(child->diffs_, child_diff_size, parent->diffs_, i, range);
-                            cpy_part(child->reps_, child_size, parent->reps_, i + 1, range);
+                            cpy_part(child->reps_, child_size, parent->reps_, j, range);
 
                             del_gaps(parent->diffs_, i, parent->diffs_.size(), range);
-                            del_gaps(parent->reps_, i + 1, parent->reps_.size(), range);
+                            del_gaps(parent->reps_, j, parent->reps_.size(), range);
 
                             parent->size_ -= range;
                             child->size_ += range;
@@ -681,16 +683,17 @@ namespace sgt {
         }
 
         size_t item_num = cend - cbegin;
+        size_t child_size = item_num + 1;
         size_t nth = cbegin - parent->diffs_.cbegin();
 
         cpy_part(child->diffs_, 0, parent->diffs_, nth, item_num);
-        cpy_part(child->reps_, 0, parent->reps_, nth, item_num + 1);
+        cpy_part(child->reps_, 0, parent->reps_, nth, child_size);
 
         del_gaps(parent->diffs_, nth, parent->diffs_.size(), item_num);
         del_gaps(parent->reps_, nth + 1, parent->reps_.size(), item_num);
         parent->reps_[nth] = Pack(offset);
 
-        child->size_ = static_cast<uint32_t>(item_num) + 1;
+        child->size_ = static_cast<uint32_t>(child_size);
         parent->size_ -= item_num;
         NodeBuild(parent, nth);
         NodeBuild(child);
@@ -702,15 +705,16 @@ namespace sgt {
               Node * child, size_t child_size) {
         idx += static_cast<size_t>(direct);
         size_t offset = Unpack(parent->reps_[idx]);
+        size_t child_diff_size = child_size - 1;
 
-        add_gaps(parent->diffs_, idx, parent_size - 1, child_size - 1);
-        add_gaps(parent->reps_, idx + 1, parent_size, child_size - 1);
+        add_gaps(parent->diffs_, idx, parent_size - 1, child_diff_size);
+        add_gaps(parent->reps_, idx + 1, parent_size, child_diff_size);
 
-        cpy_part(parent->diffs_, idx, child->diffs_, 0, child_size - 1);
+        cpy_part(parent->diffs_, idx, child->diffs_, 0, child_diff_size);
         cpy_part(parent->reps_, idx, child->reps_, 0, child_size);
 
         allocator_->FreePage(offset);
-        parent->size_ += child_size - 1;
+        parent->size_ += child_diff_size;
         NodeBuild(parent, idx);
     }
 
