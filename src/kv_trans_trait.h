@@ -38,6 +38,8 @@ namespace sgt {
     SGT_CHECK_EXPR(has_unpack, T::Unpack);
 
     SGT_CHECK_EXPR(has_is_packed, T::IsPacked);
+
+    SGT_CHECK_EXPR(has_base, T::Base);
 }
 
 #endif //SIG_TREE_KV_TRANS_TRAIT_H

@@ -63,6 +63,10 @@ namespace sgt::sig_tree_bench {
         static bool IsPacked(const uint64_t & rep) {
             return rep % 2 == 1;
         }
+
+        static void * Base() {
+            return nullptr;
+        }
     };
 
     /*

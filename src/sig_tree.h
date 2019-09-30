@@ -234,7 +234,11 @@ namespace sgt {
 
     protected:
         Node * OffsetToMemNode(size_t offset) const {
-            return reinterpret_cast<Node *>(reinterpret_cast<uintptr_t>(base_) + offset);
+            if constexpr (has_base<KV_TRANS>::value) {
+                return reinterpret_cast<Node *>(reinterpret_cast<uintptr_t>(KV_TRANS::Base()) + offset);
+            } else {
+                return reinterpret_cast<Node *>(reinterpret_cast<uintptr_t>(base_) + offset);
+            }
         }
 
         static std::tuple<size_t /* idx */, bool /* direct */, size_t /* size */>
@@ -323,7 +327,7 @@ namespace sgt {
             kForward = false,
             kBackward = true,
             kMajorVersion = 1,
-            kMinorVersion = 7,
+            kMinorVersion = 8,
             kMaxKeyLength = std::numeric_limits<K_DIFF>::max() >> 3
         };
 
