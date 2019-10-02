@@ -38,10 +38,10 @@ namespace sgt {
                     size_t idx;
                     bool direct;
                     std::tie(idx, direct, std::ignore) = FindBestMatchImpl(cursor, ks[i]);
+                    auto & rep = reps[i];
+                    rep = &cursor->reps_[idx + direct];
 #ifndef SGT_NO_MM_PREFETCH
-                    _mm_prefetch(reps[i] = &cursor->reps_[idx + direct], _MM_HINT_T0);
-#else
-                    reps[i] = &cursor->reps_[idx + direct];
+                    _mm_prefetch(rep, _MM_HINT_T0);
 #endif
                 }
             }
@@ -49,9 +49,9 @@ namespace sgt {
             for (size_t i = 0; i < N; ++i) {
                 Node *& cursor = cursors[i];
                 if (cursor != nullptr) {
-                    const auto & rep = *reps[i];
-                    if (IsPacked(rep)) {
-                        cursor = OffsetToMemNode(Unpack(rep));
+                    const auto & r = *reps[i];
+                    if (IsPacked(r)) {
+                        cursor = OffsetToMemNode(Unpack(r));
 #ifndef SGT_NO_MM_PREFETCH
                         _mm_prefetch(&cursor->size_, _MM_HINT_T0);
                         auto p = reinterpret_cast<const char *>(&cursor->diffs_);

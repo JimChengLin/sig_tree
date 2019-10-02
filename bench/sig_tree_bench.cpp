@@ -270,12 +270,6 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
 
         {
             TIME_START;
-            tree.Compact();
-            TIME_END;
-            PRINT_TIME("SGT - Compact");
-        }
-        {
-            TIME_START;
             for (auto it = src.cbegin(); it != src.cend();) {
                 std::array<Slice, 10> ss;
                 ss[0] = reinterpret_cast<char *>(*it++);
@@ -300,6 +294,12 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
             }
             TIME_END;
             PRINT_TIME("SGT - GetWithCallback");
+        }
+        {
+            TIME_START;
+            tree.Compact();
+            TIME_END;
+            PRINT_TIME("SGT - Compact");
         }
         {
             Helper helper_rebuild;
