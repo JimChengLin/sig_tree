@@ -79,10 +79,7 @@ namespace sgt {
             }
         } else { // Seek
             while (true) {
-                size_t idx;
-                bool direct;
-                std::tie(idx, direct, std::ignore) = FindBestMatch(cursor, target);
-
+                auto[idx, direct, _] = FindBestMatch(cursor, target);
                 size_t rep_idx = idx + direct;
                 que.emplace_back(cursor, rep_idx);
 
@@ -150,10 +147,7 @@ namespace sgt {
                                         }
                                         hint = nullptr;
 
-                                        K_DIFF crit_diff_at;
-                                        uint8_t crit_shift;
-                                        std::tie(crit_diff_at, crit_shift) = UnpackDiffAtAndShift(exist_diff);
-
+                                        auto[crit_diff_at, crit_shift] = UnpackDiffAtAndShift(exist_diff);
                                         uint8_t crit_byte = k.size() > crit_diff_at
                                                             ? CharToUint8(k[crit_diff_at])
                                                             : static_cast<uint8_t>(0);
@@ -218,13 +212,8 @@ namespace sgt {
         } else { // del
             while (!que.empty()) {
                 auto it = que.end();
-                Node * node;
-                size_t rep_idx;
-                std::tie(node, rep_idx) = *(--it);
-
-                bool proceed;
-                bool del;
-                std::tie(proceed, del) = visitor(node->reps_[rep_idx]);
+                auto[node, rep_idx] = *(--it);
+                auto[proceed, del] = visitor(node->reps_[rep_idx]);
 
                 if (proceed) {
                     if (del) {

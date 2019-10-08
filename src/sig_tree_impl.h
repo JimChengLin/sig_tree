@@ -32,10 +32,7 @@ namespace sgt {
         }
 
         while (true) {
-            size_t idx;
-            bool direct;
-            std::tie(idx, direct, std::ignore) = FindBestMatch(cursor, k);
-
+            auto[idx, direct, _] = FindBestMatch(cursor, k);
             const auto & rep = cursor->reps_[idx + direct];
             if (IsPacked(rep)) {
                 cursor = OffsetToMemNode(Unpack(rep));
@@ -61,10 +58,7 @@ namespace sgt {
         }
 
         while (true) {
-            size_t idx;
-            bool direct;
-            std::tie(idx, direct, std::ignore) = FindBestMatch(cursor, k);
-
+            auto[idx, direct, _] = FindBestMatch(cursor, k);
             auto & r = cursor->reps_[idx + direct];
             if (IsPacked(r)) {
                 cursor = OffsetToMemNode(Unpack(r));
@@ -115,10 +109,7 @@ namespace sgt {
         }
 
         while (true) {
-            size_t idx;
-            bool direct;
-            std::tie(idx, direct, std::ignore) = FindBestMatch(cursor, k);
-
+            auto[idx, direct, _] = FindBestMatch(cursor, k);
             auto & rep = cursor->reps_[idx + direct];
             if (IsPacked(rep)) {
                 cursor = OffsetToMemNode(Unpack(rep));
@@ -157,11 +148,7 @@ namespace sgt {
         size_t parent_size{};
 
         while (true) {
-            size_t idx;
-            bool direct;
-            size_t size;
-            std::tie(idx, direct, size) = FindBestMatch(cursor, k);
-
+            auto[idx, direct, size] = FindBestMatch(cursor, k);
             const auto & rep = cursor->reps_[idx + direct];
             if (IsPacked(rep)) {
                 parent = cursor;
@@ -237,10 +224,7 @@ namespace sgt {
 
         K_DIFF min_val;
         const K_DIFF * min_it = cbegin + node->pyramid_.MinAt(cbegin, cend, &min_val);
-
-        K_DIFF diff_at;
-        uint8_t shift;
-        std::tie(diff_at, shift) = UnpackDiffAtAndShift(min_val);
+        auto[diff_at, shift] = UnpackDiffAtAndShift(min_val);
 
         uint8_t crit_byte = k.size() > diff_at
                             ? CharToUint8(k[diff_at])
@@ -442,9 +426,7 @@ namespace sgt {
         const K_DIFF * min_it = cbegin + node->pyramid_.MinAt(cbegin, cend, &min_val);
         while (true) {
             assert(min_it == std::min_element(cbegin, cend) && *min_it == min_val);
-            K_DIFF diff_at;
-            uint8_t shift;
-            std::tie(diff_at, shift) = UnpackDiffAtAndShift(min_val);
+            auto[diff_at, shift] = UnpackDiffAtAndShift(min_val);
 
             // left or right?
             uint8_t crit_byte = k.size() > diff_at
@@ -518,10 +500,7 @@ namespace sgt {
                     }
                     hint = nullptr;
 
-                    K_DIFF crit_diff_at;
-                    uint8_t crit_shift;
-                    std::tie(crit_diff_at, crit_shift) = UnpackDiffAtAndShift(exist_diff);
-
+                    auto[crit_diff_at, crit_shift] = UnpackDiffAtAndShift(exist_diff);
                     uint8_t crit_byte = k.size() > crit_diff_at
                                         ? CharToUint8(k[crit_diff_at])
                                         : static_cast<uint8_t>(0);

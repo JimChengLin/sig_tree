@@ -35,9 +35,7 @@ namespace sgt {
             for (size_t i = 0; i < N; ++i) {
                 Node * cursor = cursors[i];
                 if (cursor != nullptr) {
-                    size_t idx;
-                    bool direct;
-                    std::tie(idx, direct, std::ignore) = FindBestMatchImpl(cursor, ks[i]);
+                    auto[idx, direct, _] = FindBestMatchImpl(cursor, ks[i]);
                     auto & rep = reps[i];
                     rep = &cursor->reps_[idx + direct];
 #ifndef SGT_NO_MM_PREFETCH
