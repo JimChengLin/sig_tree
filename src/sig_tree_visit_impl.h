@@ -235,8 +235,8 @@ namespace sgt {
                                             node, size);
                             it->second += rep_idx;
                             que.pop_back();
-                        } else if (const auto & r = node->reps_[0];
-                                size == 1 && self->IsPacked(r)) {
+                        } else if (KV_REP r;
+                                size == 1 && (r = node->reps_[0], self->IsPacked(r))) {
                             Node * child = self->OffsetToMemNode(self->Unpack(r));
                             size_t child_size = NodeSize(child);
                             self->NodeMerge(node, 0, false, 1,

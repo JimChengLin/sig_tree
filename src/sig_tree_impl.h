@@ -164,8 +164,8 @@ namespace sgt {
                     if (parent != nullptr && parent->reps_.size() - parent_size + 1 >= size) {
                         NodeMerge(parent, parent_idx, parent_direct, parent_size,
                                   cursor, size);
-                    } else if (const auto & r = cursor->reps_[0];
-                            size == 1 && IsPacked(r)) {
+                    } else if (KV_REP r;
+                            size == 1 && (r = cursor->reps_[0], IsPacked(r))) {
                         Node * child = OffsetToMemNode(Unpack(r));
                         NodeMerge(cursor, 0, false, 1,
                                   child, NodeSize(child));
