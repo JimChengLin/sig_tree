@@ -64,7 +64,7 @@ namespace sgt {
         SignatureTreeTpl(Helper * helper, Allocator * allocator, size_t root_offset)
                 : helper_(helper),
                   allocator_(allocator),
-                  base_(allocator->Base()),
+                  base_(Base()),
                   kRootOffset(root_offset) {}
 
         SignatureTreeTpl(const SignatureTreeTpl &) = delete;
@@ -234,11 +234,7 @@ namespace sgt {
 
     protected:
         Node * OffsetToMemNode(size_t offset) const {
-            if constexpr (has_base<KV_TRANS>::value) {
-                return reinterpret_cast<Node *>(reinterpret_cast<uintptr_t>(KV_TRANS::Base()) + offset);
-            } else {
-                return reinterpret_cast<Node *>(reinterpret_cast<uintptr_t>(base_) + offset);
-            }
+            return reinterpret_cast<Node *>(reinterpret_cast<uintptr_t>(Base()) + offset);
         }
 
         static std::tuple<size_t /* idx */, bool /* direct */, size_t /* size */>
@@ -320,6 +316,14 @@ namespace sgt {
             }
         }
 
+        inline void * Base() const {
+            if constexpr (has_base<KV_TRANS>::value) {
+                return KV_TRANS::Base();
+            } else {
+                return base_;
+            }
+        }
+
     public:
         enum {
             kNodeRank = NodeRank<>::value,
@@ -327,7 +331,7 @@ namespace sgt {
             kForward = false,
             kBackward = true,
             kMajorVersion = 1,
-            kMinorVersion = 12,
+            kMinorVersion = 13,
             kMaxKeyLength = std::numeric_limits<K_DIFF>::max() >> 3
         };
 
