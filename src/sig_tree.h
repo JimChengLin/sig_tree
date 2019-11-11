@@ -64,7 +64,7 @@ namespace sgt {
         SignatureTreeTpl(Helper * helper, Allocator * allocator, size_t root_offset)
                 : helper_(helper),
                   allocator_(allocator),
-                  base_(Base()),
+                  base_(allocator->Base()),
                   kRootOffset(root_offset) {}
 
         SignatureTreeTpl(const SignatureTreeTpl &) = delete;
@@ -331,7 +331,7 @@ namespace sgt {
             kForward = false,
             kBackward = true,
             kMajorVersion = 1,
-            kMinorVersion = 13,
+            kMinorVersion = 14,
             kMaxKeyLength = std::numeric_limits<K_DIFF>::max() >> 3
         };
 
