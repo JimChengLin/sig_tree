@@ -166,6 +166,7 @@ namespace sgt {
                                   cursor, size);
                     } else if (KV_REP r;
                             size == 1 && (r = cursor->reps_[0], IsPacked(r))) {
+                        assert(parent == nullptr);
                         Node * child = OffsetToMemNode(Unpack(r));
                         NodeMerge(cursor, 0, false, 1,
                                   child, NodeSize(child));
@@ -551,11 +552,45 @@ namespace sgt {
         return true;
     }
 
-#define add_gap(arr, idx, size) memmove(&(arr)[(idx) + 1], &(arr)[(idx)], sizeof((arr)[0]) * ((size) - (idx)))
-#define del_gap(arr, idx, size) memmove(&(arr)[(idx)], &(arr)[(idx) + 1], sizeof((arr)[0]) * ((size) - ((idx) + 1)))
-#define add_gaps(arr, idx, size, n) memmove(&(arr)[(idx) + (n)], &(arr)[(idx)], sizeof((arr)[0]) * ((size) - (idx)))
-#define del_gaps(arr, idx, size, n) memmove(&(arr)[(idx)], &(arr)[(idx) + (n)], sizeof((arr)[0]) * ((size) - ((idx) + (n))))
-#define cpy_part(dst, dst_idx, src, src_idx, n) memcpy(&(dst)[(dst_idx)], &(src)[(src_idx)], sizeof((src)[0]) * (n))
+#define add_gap(arr, idx, size) \
+do { \
+    auto idx__ = (idx); \
+    auto size__ = (size); \
+    memmove(&arr[idx__ + 1], &arr[idx__], sizeof(arr[0]) * (size__ - idx__)); \
+} while (false)
+
+#define del_gap(arr, idx, size) \
+do { \
+    auto idx__ = (idx); \
+    auto size__ = (size); \
+    auto indx__ = (idx__ + 1); \
+    memmove(&arr[idx__], &arr[indx__], sizeof(arr[0]) * (size__ - indx__)); \
+} while (false)
+
+#define add_gaps(arr, idx, size, n) \
+do { \
+    auto idx__ = (idx); \
+    auto size__ = (size); \
+    auto n__ = (n); \
+    memmove(&arr[idx__ + n__], &arr[idx__], sizeof(arr[0]) * (size__ - idx__)); \
+} while (false)
+
+#define del_gaps(arr, idx, size, n) \
+do { \
+    auto idx__ = (idx); \
+    auto size__ = (size); \
+    auto n__ = (n); \
+    auto indx__ = (idx__ + n__); \
+    memmove(&arr[idx__], &arr[indx__], sizeof(arr[0]) * (size__ - indx__)); \
+} while (false)
+
+#define cpy_part(dst, dst_idx, src, src_idx, n) \
+do { \
+    auto dst_idx__ = (dst_idx); \
+    auto src_idx__ = (src_idx); \
+    auto n__ = (n); \
+    memcpy(&dst[dst_idx__], &src[src_idx__], sizeof(src[0]) * n__); \
+} while (false);
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     void SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
@@ -782,7 +817,7 @@ namespace sgt {
 
         node->diffs_[insert_idx] = diff;
         node->reps_[rep_idx] = rep;
-        ++node->size_;
+        node->size_ = size + 1;
         NodeBuild(node, insert_idx);
     }
 
@@ -790,10 +825,10 @@ namespace sgt {
     void SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
     NodeRemove(Node * node, size_t idx, bool direct, size_t size) {
         assert(size >= 1);
-        --node->size_;
         del_gap(node->reps_, idx + direct, size);
-        if (SGT_LIKELY(size > 1)) {
-            del_gap(node->diffs_, idx, size - 1);
+        node->size_ = --size;
+        if (SGT_LIKELY(size > 0)) {
+            del_gap(node->diffs_, idx, size);
             NodeBuild(node, idx);
         }
     }
