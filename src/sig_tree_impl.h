@@ -590,7 +590,7 @@ do { \
     auto src_idx__ = (src_idx); \
     auto n__ = (n); \
     memcpy(&dst[dst_idx__], &src[src_idx__], sizeof(src[0]) * n__); \
-} while (false);
+} while (false)
 
     template<typename KV_TRANS, typename K_DIFF, typename KV_REP>
     void SignatureTreeTpl<KV_TRANS, K_DIFF, KV_REP>::
