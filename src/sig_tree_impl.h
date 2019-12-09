@@ -456,14 +456,15 @@ namespace sgt {
     CombatInsert(const Slice & opponent, const Slice & k, KV_REP v,
                  Node * hint, size_t hint_idx, bool hint_direct) {
         K_DIFF diff_at = 0;
-        while (opponent[diff_at] == k[diff_at]) {
+        char a, b;
+        while ((a = opponent[diff_at]) == (b = k[diff_at])) {
             ++diff_at;
         }
 
-        // __builtin_clz: returns the number of leading 0-bits in x, starting at the most significant bit position
-        // if x is 0, the result is undefined
-        uint8_t shift = (__builtin_clz(CharToUint8(opponent[diff_at] ^ k[diff_at])) ^ 31); // bsr
-        auto direct = ((CharToUint8(k[diff_at]) >> shift) & 1);
+        // __builtin_clz: returns the number of leading 0-bits in x, starting at the
+        // most significant bit position if x is 0, the result is undefined
+        uint8_t shift = (__builtin_clz(CharToUint8(a ^ b)) ^ 31);  // bsr
+        auto direct = ((CharToUint8(b) >> shift) & 1);
 
         K_DIFF packed_diff = PackDiffAtAndShift(diff_at, shift);
         Node * cursor = hint;
