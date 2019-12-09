@@ -125,7 +125,7 @@ namespace sgt {
                                 } else if (hint != nullptr && packed_diff > hint->diffs_[hint_idx]) {
                                     insert_idx = hint_idx;
                                     insert_direct = hint_direct;
-                                    hint = nullptr;
+                                    assert(!self->IsPacked(cursor->reps_[insert_idx + insert_direct]));
                                 } else {
                                     const K_DIFF * cbegin = cursor->diffs_.cbegin();
                                     const K_DIFF * cend = &cursor->diffs_[cursor_size - 1];

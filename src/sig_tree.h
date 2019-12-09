@@ -331,7 +331,7 @@ namespace sgt {
             kForward = false,
             kBackward = true,
             kMajorVersion = 1,
-            kMinorVersion = 17,
+            kMinorVersion = 18,
             kMaxKeyLength = std::numeric_limits<K_DIFF>::max() >> 3
         };
 
