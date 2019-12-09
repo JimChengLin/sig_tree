@@ -119,10 +119,7 @@ namespace sgt {
                                 bool insert_direct;
 
                                 size_t cursor_size = NodeSize(cursor);
-                                if (SGT_UNLIKELY(cursor_size == 1)) {
-                                    insert_idx = 0;
-                                    insert_direct = false;
-                                } else if (hint != nullptr && packed_diff > hint->diffs_[hint_idx]) {
+                                if (cursor_size == 1 || (hint != nullptr && packed_diff > hint->diffs_[hint_idx])) {
                                     insert_idx = hint_idx;
                                     insert_direct = hint_direct;
                                     assert(!self->IsPacked(cursor->reps_[insert_idx + insert_direct]));
