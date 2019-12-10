@@ -168,19 +168,19 @@ namespace sgt::sig_tree_test {
                 uint32_t v = *it++;
                 return v == (rep >> 32);
             });
-            assert(it == set.cend());
+            assert(it == set.end());
         }
         {
             auto val = dist(engine);
             auto it = set.lower_bound(val);
-            if (it != set.cend()) {
+            if (it != set.end()) {
                 ++it;
                 Slice s(reinterpret_cast<char *>(&val), sizeof(val));
                 tree.Visit<tree.kBackward>(s, [&it](const uint64_t & rep) {
                     uint32_t v = *--it;
                     return v == (rep >> 32);
                 });
-                assert(it == set.cbegin());
+                assert(it == set.begin());
             }
         }
 
