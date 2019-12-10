@@ -98,8 +98,8 @@ namespace sgt {
                     } else { // Reseek
                         que.pop_back();
 
-                        [self, &que, &next](const Slice & opponent, const Slice & k,
-                                            Node * hint, size_t hint_idx, bool hint_direct) {
+                        [self, &que, &next, &leftmost](const Slice & opponent, const Slice & k,
+                                                       Node * hint, size_t hint_idx, bool hint_direct) {
                             K_DIFF diff_at = 0;
                             char a, b;
                             while ((a = opponent[diff_at]) == (b = k[diff_at])) {
@@ -181,6 +181,8 @@ namespace sgt {
                                 if (cursor->diffs_[insert_idx] > packed_diff || !self->IsPacked(rep)) {
                                     if (direct) {
                                         next();
+                                    } else if (self->IsPacked(rep)) {
+                                        leftmost(self->OffsetToMemNode(self->Unpack(rep)));
                                     }
                                     break;
                                 }
