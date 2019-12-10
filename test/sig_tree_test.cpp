@@ -134,8 +134,7 @@ namespace sgt::sig_tree_test {
         std::default_random_engine engine(seed);
         std::uniform_int_distribution<uint32_t> dist(0, UINT32_MAX >> 1);
         for (size_t i = 0; i < kTestTimes; ++i) {
-            auto v = dist(engine);
-            v = (v << 16) | (dist(engine) % 8);
+            uint32_t v = (dist(engine) << 16) | (dist(engine) % 8);
             v += (v % 2 == 0);
 
             set.emplace(v);
