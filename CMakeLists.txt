@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -Wall -Werror")
 
+add_compile_definitions(SGT_NO_MM_PREFETCH SGT_NO_DENSE_INPUT_CACHE)
+
 add_executable(sig_tree main.cpp
         bench/sig_tree_bench.cpp
         src/allocator.h
@@ -20,4 +22,6 @@ add_executable(sig_tree main.cpp
         src/sig_tree_rebuild_impl.h
         src/sig_tree_visit_impl.h
         src/slice.h
-        test/sig_tree_test.cpp)
+        test/sig_tree_test.cpp
+        bench/critbit.c
+        bench/critbit.h)

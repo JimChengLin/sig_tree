@@ -10,6 +10,7 @@
 #include "../src/sig_tree_node_impl.h"
 #include "../src/sig_tree_rebuild_impl.h"
 #include "../src/sig_tree_visit_impl.h"
+#include "critbit.h"
 
 namespace sgt::sig_tree_bench {
     // 字符串比较次数
@@ -210,6 +211,8 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
         };
         std::unordered_set<const char *, hash, equal> unordered_set;
 
+        critbit0_tree cbt = {0};
+
         // Add - 开始
         {
             TIME_START;
@@ -217,23 +220,32 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
                 tree.Add(reinterpret_cast<char *>(s), {});
             }
             TIME_END;
+            std::cout << "page num " << allocator.records_.size() << std::endl;
             PRINT_TIME("SGT - Add");
         }
+//        {
+//            TIME_START;
+//            for (const auto & s:src) {
+//                set.emplace(reinterpret_cast<char *>(s));
+//            }
+//            TIME_END;
+//            PRINT_TIME("std::set - emplace");
+//        }
+//        {
+//            TIME_START;
+//            for (const auto & s:src) {
+//                unordered_set.emplace(reinterpret_cast<char *>(s));
+//            }
+//            TIME_END;
+//            PRINT_TIME("std::unordered_set - emplace");
+//        }
         {
             TIME_START;
             for (const auto & s:src) {
-                set.emplace(reinterpret_cast<char *>(s));
+                critbit0_insert(&cbt, reinterpret_cast<char *>(s));
             }
             TIME_END;
-            PRINT_TIME("std::set - emplace");
-        }
-        {
-            TIME_START;
-            for (const auto & s:src) {
-                unordered_set.emplace(reinterpret_cast<char *>(s));
-            }
-            TIME_END;
-            PRINT_TIME("std::unordered_set - emplace");
+            PRINT_TIME("cbt - insert");
         }
         // Add - 结束
         // Get - 开始
@@ -245,21 +257,29 @@ std::cout << name " took " << std::chrono::duration_cast<std::chrono::millisecon
             TIME_END;
             PRINT_TIME("SGT - Get");
         }
+//        {
+//            TIME_START;
+//            for (const auto & s:src) {
+//                set.find(reinterpret_cast<char *>(s));
+//            }
+//            TIME_END;
+//            PRINT_TIME("std::set - find");
+//        }
+//        {
+//            TIME_START;
+//            for (const auto & s:src) {
+//                unordered_set.find(reinterpret_cast<char *>(s));
+//            }
+//            TIME_END;
+//            PRINT_TIME("std::unordered_set - find");
+//        }
         {
             TIME_START;
             for (const auto & s:src) {
-                set.find(reinterpret_cast<char *>(s));
+                critbit0_contains(&cbt, reinterpret_cast<char *>(s));
             }
             TIME_END;
-            PRINT_TIME("std::set - find");
-        }
-        {
-            TIME_START;
-            for (const auto & s:src) {
-                unordered_set.find(reinterpret_cast<char *>(s));
-            }
-            TIME_END;
-            PRINT_TIME("std::unordered_set - find");
+            PRINT_TIME("cbt - find");
         }
         // Get - 结束
 
